@@ -1,0 +1,85 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build outputs
+dist
+build
+.next
+.turbo
+out
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+.nyc_output
+
+# Caches
+.cache
+.parcel-cache
+.eslintcache
+.stylelintcache
+
+# IDE / Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Supabase
+supabase/.temp
+supabase/.branches
+
+# Wallet certificates (NEVER commit these)
+*.p12
+*.pem
+*.key
+*.cer
+*.p8
+certs/
+credentials/
+
+# Database
+*.sqlite
+*.db
+
+# NOTE: .pen files (Pencil design files) ARE tracked in Git.
+# They live in /design/ and are the source of truth for visual design.
