@@ -1,0 +1,10 @@
+{
+  "name": "@app/config",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./eslint.config.js",
+  "files": [
+    "tsconfig.base.json",
+    "eslint.config.js"
+  ]
+}
