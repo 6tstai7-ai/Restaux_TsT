@@ -259,18 +259,18 @@ const DemoDashboard = () => {
                                    "GÉNÉRER LA CAMPAGNE IA";
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-7xl space-y-10">
+    <div className="min-h-screen bg-black text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-7xl space-y-8 md:space-y-10">
 
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-zinc-800 pb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tighter italic">RESTAUX.</h1>
-            <p className="text-zinc-500 text-lg">Dashboard Pilote — La Boîte Jaune</p>
-          </div>
-          <div className="flex items-center gap-8">
+        <div className="flex flex-col gap-4 border-b border-zinc-800 pb-6 md:flex-row md:items-center md:justify-between md:pb-8">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-extrabold tracking-tighter italic md:text-3xl">RESTAUX.</h1>
             <DashboardNav />
-            <Badge variant="outline" className="text-yellow-500 border-yellow-500 text-base px-4 py-1.5">Mode Démo Actif</Badge>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end md:gap-8">
+            <p className="text-zinc-500 text-base md:text-lg">Dashboard Pilote — La Boîte Jaune</p>
+            <Badge variant="outline" className="text-yellow-500 border-yellow-500 text-xs px-3 py-1 md:text-base md:px-4 md:py-1.5">Mode Démo Actif</Badge>
           </div>
         </div>
 
