@@ -275,7 +275,7 @@ const DemoDashboard = () => {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
           {metricsLoading ? (
             <>
               <KpiSkeleton />
@@ -284,12 +284,12 @@ const DemoDashboard = () => {
           ) : (
             <>
               <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader className="flex flex-row items-center justify-between pb-4">
-                  <CardTitle className="text-lg font-medium text-zinc-400">Clients fidélisés</CardTitle>
-                  <Users className="h-6 w-6 text-blue-400" />
+                <CardHeader className="flex flex-row items-center justify-between pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg font-medium text-zinc-400">Clients fidélisés</CardTitle>
+                  <Users className="h-5 w-5 md:h-6 md:w-6 text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-5xl font-extrabold">
+                  <div className="text-4xl md:text-5xl font-extrabold tabular-nums">
                     {(kpis?.totalCustomers ?? 0).toLocaleString('fr-CA')}
                   </div>
                   <p className="text-sm text-zinc-500 mt-1">Base opt-in active</p>
@@ -297,12 +297,12 @@ const DemoDashboard = () => {
               </Card>
 
               <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader className="flex flex-row items-center justify-between pb-4">
-                  <CardTitle className="text-lg font-medium text-zinc-400">Points distribués</CardTitle>
-                  <TrendingUp className="h-6 w-6 text-emerald-400" />
+                <CardHeader className="flex flex-row items-center justify-between pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg font-medium text-zinc-400">Points distribués</CardTitle>
+                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-emerald-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-5xl font-extrabold">
+                  <div className="text-4xl md:text-5xl font-extrabold tabular-nums">
                     {(kpis?.totalPoints ?? 0).toLocaleString('fr-CA')}
                   </div>
                   <p className="text-sm text-zinc-500 mt-1">Solde total fidélité</p>
@@ -319,18 +319,18 @@ const DemoDashboard = () => {
         )}
 
         {/* Audit des Surplus */}
-        <div className="mt-16">
+        <div className="mt-8 md:mt-16">
           <Card className="bg-zinc-900 border-2 border-yellow-500/50 text-white">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <span className="h-3 w-3 bg-yellow-500 rounded-full animate-pulse" />
+              <CardTitle className="text-xl md:text-2xl flex items-center gap-3">
+                <span className="h-3 w-3 bg-yellow-500 rounded-full animate-pulse shrink-0" />
                 Audit des Surplus Hebdomadaire
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-zinc-400 text-lg italic">"{AUDIT_QUESTION}"</p>
+            <CardContent className="space-y-5 md:space-y-6">
+              <p className="text-zinc-400 text-base md:text-lg italic">"{AUDIT_QUESTION}"</p>
               <textarea
-                className="w-full bg-black border border-zinc-700 rounded-lg p-6 text-xl text-zinc-300 focus:border-yellow-500 outline-none h-40 disabled:opacity-60"
+                className="w-full bg-black border border-zinc-700 rounded-lg p-4 md:p-6 text-base md:text-xl text-zinc-300 focus:border-yellow-500 outline-none h-40 disabled:opacity-60"
                 placeholder="Ex: 15kg d'ailes de poulet, porc pour griot..."
                 value={surplusText}
                 onChange={(e) => setSurplusText(e.target.value)}
@@ -344,19 +344,19 @@ const DemoDashboard = () => {
               <Button
                 onClick={handleGenerate}
                 disabled={buttonDisabled || surplusText.trim().length === 0}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-8 text-2xl tracking-tight disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 md:py-8 text-base md:text-2xl tracking-tight disabled:opacity-60 disabled:cursor-not-allowed whitespace-normal"
               >
-                <Send className="mr-3 h-6 w-6" /> {buttonText}
+                <Send className="mr-3 h-5 w-5 md:h-6 md:w-6 shrink-0" /> <span className="text-center">{buttonText}</span>
               </Button>
             </CardContent>
           </Card>
         </div>
 
         {/* Section Bas : SMS et Clients */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="mt-8 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
 
           {/* Aperçu SMS */}
-          <div className={`p-8 border rounded-xl bg-zinc-900/50 ${generatedSms ? 'border-yellow-500/60' : 'border-zinc-800 opacity-80'}`}>
+          <div className={`p-5 md:p-8 border rounded-xl bg-zinc-900/50 ${generatedSms ? 'border-yellow-500/60' : 'border-zinc-800 opacity-80'}`}>
             <h3 className="text-sm font-bold text-zinc-500 uppercase mb-4 tracking-widest flex items-center gap-2">
               Aperçu Promo SMS
               {generatedSms && sendStatus !== 'sent' && (
