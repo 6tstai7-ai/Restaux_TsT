@@ -1,19 +1,53 @@
-import { useTranslation } from "react-i18next";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import Login from "./pages/Login";
+import DemoDashboard from "./DemoDashboard";
+import ClientsView from "./components/ClientsView";
+import LoyaltySettings from "./components/LoyaltySettings";
+import ScannerView from "./components/ScannerView";
+import PublicEnrollment from "./views/PublicEnrollment";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export default function App() {
-  const { t, i18n } = useTranslation();
-  const next = i18n.resolvedLanguage === "fr" ? "en" : "fr";
-
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-3xl font-semibold">{t("welcome")}</h1>
-      <button
-        type="button"
-        onClick={() => i18n.changeLanguage(next)}
-        className="rounded border px-4 py-2"
-      >
-        {t("switchLocale", { lng: next.toUpperCase() })}
-      </button>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/rejoindre/:restaurantId" element={<PublicEnrollment />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DemoDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <ClientsView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/loyalty"
+          element={
+            <ProtectedRoute>
+              <LoyaltySettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scanner"
+          element={
+            <ProtectedRoute>
+              <ScannerView />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

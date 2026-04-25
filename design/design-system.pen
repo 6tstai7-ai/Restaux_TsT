@@ -1,0 +1,11 @@
+{
+  "version": "2.11",
+  "variables": {
+    "primary": { "type": "color", "value": "#3B82F6" },
+    "secondary": { "type": "color", "value": "#F97316" },
+    "text-primary": { "type": "color", "value": "#1F2937" },
+    "text-secondary": { "type": "color", "value": "#4B5563" },
+    "font-primary": { "type": "string", "value": "Inter" }
+  },
+  "children": []
+}

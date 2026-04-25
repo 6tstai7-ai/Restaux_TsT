@@ -1,186 +1,165 @@
-# CLAUDE.md — Restaurant SaaS (Working Title)
+# CLAUDE.md — Restaux (War Room Edition)
 
-> Ce fichier est la **source de vérité** pour Claude Code et tout contributeur.
+> Source de vérité pour Claude Code et tout contributeur.
 > Si une décision dans le repo contredit ce fichier, ce fichier gagne.
-> v4 — intégration pencil.dev — 2026-04-21
+> v5 — pivot War Room, deadline 14 jours — 2026-04-22
 
 ---
 
 ## 1. Projet en une phrase
 
-Un SaaS bilingue (FR/EN) pour restaurants indépendants qui transforme les données de stock en revenu : **scan de code-barres à la réception → agent IA détecte les surplus → génère des promos → envoyées par SMS/email à la base de clients fidélisés, matérialisée par une carte Apple/Google Wallet avec points par dollar dépensé.**
+Un SaaS **100% français (FR-CA)** pour restos indépendants québécois qui transforme les surplus en revenu : **chaque semaine le système questionne le chef sur ses produits à écouler → l'IA rédige promo + SMS + contenu wallet → envoi en masse à la base fidélisée, matérialisée par une carte Apple/Google Wallet avec points par dollar dépensé.**
 
 ## 2. Modèle d'affaires
 
-- **Prix de départ** : 800 $ CAD setup + 500 $ CAD/mois (à valider avec pilote)
-- **Cible** : restaurants indépendants francophones et anglophones au Québec (étendue Canada en phase 2)
-- **Proposition de valeur** : « On transforme ton stock en revenu. » Pas un POS, pas un CRM générique, un outil de récupération de marge + rétention client.
+- **Prix pilote** : facturation **manuelle** (pas de Stripe au MVP). Grille à valider après La Boîte Jaune.
+- **Cible pivot** : restaurants indépendants francophones au Québec. L'anglais est reporté après pilote.
+- **Proposition de valeur** : « On transforme ton stock en revenu. »
 
 ## 3. Pilote
 
-- **Statut** : 1 pilote prêt, identifié
-- **Objectif pilote** : définir un critère mesurable avec lui (ex. réduire le gaspillage de X%, augmenter visites répétées de Y%) avant d'écrire du code
-- **Règle absolue** : aucune feature ne rentre dans le sprint courant si elle n'est pas demandée ou validée par le pilote
+- **Pilote** : **La Boîte Jaune** (menu créole/casse-croûte : ailes de poulet, Mac n Cheese, griot)
+- **Deadline absolue** : **14 jours à partir de 2026-04-22** (livraison ciblée **2026-05-06**)
+- **Règle** : aucune feature ne rentre si elle n'est pas sur le chemin critique de la démo au pilote
 
-## 4. Scope — ce qui est dedans
+## 4. Scope — ce qui est dedans (14 jours)
 
-### 4.1 Inventaire
-- Saisie manuelle OU scan de code-barres sur emballage fournisseur (EAN/UPC)
-- Niveaux de stock, seuil par_level par ingrédient
-- Historique des comptages
+### 4.1 Audit proactif — « Option C » (workflow CENTRAL)
 
-### 4.2 Agent IA de recommandations
-- Analyse du stock en continu
-- Détection : surplus, péremption à risque, sous-rotation
-- Génère des suggestions d'actions (promos, plats du jour) dans le dashboard
-- Le gérant approuve → devient une campagne
+1. Chaque semaine (cron), le système insère un enregistrement `audits` avec une question type : *« Bonjour, quels sont vos 2-3 surplus ou produits à écouler cette semaine ? »*
+2. Le chef est notifié (SMS ou email, dashboard suffit pour démo) et **répond en texte libre** directement dans le dashboard : *« Ailes de poulet (12 mcx), macaroni au fromage »*
+3. L'IA (Claude API, appel direct) lit la réponse + le contexte resto et génère **une promo** avec `content_sms` + `content_wallet`
+4. Le chef relit, approuve → la promotion passe `status = 'sent'` → diffusion SMS à la base opt-in
+5. Tout est tracé : `audits` → `promotions`
 
-### 4.3 Moteur de promotions
-- Création manuelle OU déclenchée par l'IA (avec approbation gérant)
-- Chaque promo a : titre, description, durée, canal(aux)
-- **Diffusion en masse à tous les clients opt-in** (pas de segmentation individuelle au MVP)
+**Pas d'inventaire, pas de scan, pas de ingrédients, pas de par_level.** Le texte libre du chef remplace toute modélisation de stock.
 
-### 4.4 Programme de fidélité
-- **Modèle** : points par dollar dépensé
-- **Taux configurable par resto** (défaut : 1 point / 1 $ CAD)
-- **Récompenses définies par le resto** : table `rewards` avec nom + coût en points
-- **Carte virtuelle** : Apple Wallet + Google Wallet, affiche solde en temps réel via push updates
-- **Pas de tiers/statuts** au MVP (phase 2)
-- **Pas d'expiration de points** au MVP
+### 4.2 CRM clients
+- `customers` : nom, téléphone, email, opt-ins (SMS/email) horodatés, `points_balance` dénormalisé
+- Inscription : gérant depuis le dashboard, OU formulaire web public (QR code au comptoir)
+- Opt-in explicite tracé dans `consent_log` (CASL/Loi 25 — **non négociable**)
+- Pass wallet envoyé automatiquement après inscription
 
-### 4.5 Enregistrement des visites
-1. Gérant ouvre le dashboard admin
-2. Clique « Enregistrer une visite »
-3. Identifie le client par : **numéro de téléphone** (recherche auto-complete) OU **scan du code-barres** du pass wallet
-4. Saisit le **montant dépensé** (CAD)
-5. Système calcule `points = floor(montant × points_per_dollar)` et les ajoute
-6. Push notification vers le pass wallet du client → solde mis à jour
-7. Transaction loguée dans `visits`
+### 4.3 Enregistrement des visites
+1. Gérant clique « Enregistrer une visite »
+2. Identifie le client par téléphone (auto-complete) ou scan du barcode du pass wallet
+3. Saisit le **montant dépensé** (CAD)
+4. Système insère une ligne dans `visits` ET une ligne dans `points_transactions` (reason=`visit`, delta=+points) dans la même transaction
+5. `customers.points_balance` mis à jour
+6. Push wallet → solde à jour sur la carte
 
-### 4.6 Récompenses / rédemption
-- Solde visible au moment de l'enregistrement d'une visite
-- Bouton « Échanger une récompense » → sélection dans rewards actives → points débités → log dans `redemptions`
-- Pas de code unique au MVP : le gérant applique la réduction manuellement à la caisse
+### 4.4 Fidélité
+- Modèle simple : **points par dollar dépensé**, taux configurable par resto (défaut 1 pt / 1 $ CAD)
+- Pas d'expiration, pas de tiers, pas de codes de rédemption uniques
+- Rédemption manuelle à la caisse : le gérant clique « Rédemption », saisit la raison, insert dans `points_transactions` avec `delta` négatif
 
-### 4.7 CRM client
-- Base clients : téléphone, email, opt-ins SMS/email (horodatés), solde points, dépense à vie, nombre de visites
-- Inscription : **2 chemins**
-  1. Gérant ajoute depuis le dashboard (collecte verbale)
-  2. Formulaire web public bilingue (QR code sur table/comptoir)
-- Opt-in SMS et email explicites et tracés (CASL)
-- Pass wallet envoyé automatiquement par SMS ou email après inscription
-
-### 4.8 Diffusion des campagnes
+### 4.5 Diffusion
 - SMS via Twilio (10DLC enregistré)
-- Email via Resend
-- Gérant choisit le canal (ou les deux)
-- Mécanisme STOP/désabonnement obligatoire
-- Journal dans `campaigns` avec sent/delivered/failed
+- STOP/désabonnement obligatoire dans chaque message
+- Email Resend en bonus seulement si temps
 
-### 4.9 Dashboard admin
-- Un seul rôle au MVP : le gérant
-- Pages : Stock, Recommandations IA, Promotions, Clients, Campagnes, Paramètres
+### 4.6 Dashboard admin
+- Un seul rôle : le gérant (owner du resto)
+- Pages essentielles : **Audit du jour, Promotions, Clients, Paramètres**. C'est tout.
 
-## 5. Scope — ce qui est dehors (explicitement)
+## 5. Scope — ce qui est HORS MVP (non négociable)
 
-- ❌ Segmentation individuelle des promos (« Marie aime le poisson »)
-- ❌ Tiers de fidélité (Bronze/Argent/Or)
-- ❌ Expiration des points
-- ❌ Codes de rédemption uniques
-- ❌ Intégration POS (Toast, Square, Lightspeed) — phase 2
-- ❌ Recettes / décrément automatique du stock par plat — phase 2
-- ❌ Instagram DM / réseaux sociaux — phase 2
-- ❌ App mobile native — la carte wallet suffit
-- ❌ Multi-location / chaînes — MVP un resto = un compte
-- ❌ Portail client web distinct — la carte wallet EST l'interface client
-- ❌ CrewAI / multi-agent orchestration — appel direct Claude API suffit au MVP
+- ❌ Bilingue / i18next / locales (reporté post-pilote)
+- ❌ Stripe / paiements automatiques (facturation manuelle)
+- ❌ Scan de code-barres fournisseur / saisie d'inventaire / par_level / ingrédients
+- ❌ Décrément automatique du stock par plat / recettes
+- ❌ Segmentation individuelle, tiers de fidélité, expiration, codes de rédemption
+- ❌ Intégration POS (Toast, Square, Lightspeed)
+- ❌ Instagram DM / réseaux sociaux
+- ❌ App mobile native (la carte wallet suffit)
+- ❌ Multi-location / chaînes
+- ❌ Portail client web distinct
+- ❌ CrewAI / multi-agent
 
-## 6. Stack technique — décisions finales
+## 6. Stack technique
 
 | Couche | Technologie | Note |
 |---|---|---|
 | Monorepo | pnpm workspaces + Turborepo | |
 | Frontend | Vite + React + TypeScript | `apps/web` |
-| UI | Tailwind CSS + shadcn/ui | |
-| **Design** | **pencil.dev (extension VS Code + MCP avec Claude Code)** | **Fichiers `.pen` dans `/design`, versionnés** |
+| UI | Tailwind CSS + shadcn/ui (stubs minimaux dans `src/components/ui`) | |
+| Strings | **Français en dur, pas d'i18n** | |
 | Data fetching | TanStack Query | |
 | Routing | React Router v6 | |
-| i18n | react-i18next (FR par défaut) | |
 | Backend | Express + TypeScript | `apps/api` |
 | Validation | Zod | shared via `packages/shared` |
-| DB + Auth + Storage | Supabase (Postgres + RLS) | |
+| DB + Auth + Storage | Supabase (Postgres + RLS) | `packages/database/supabase` |
 | IA | `@anthropic-ai/sdk` — appel direct Claude | |
-| Scan code-barres | `@zxing/browser` | côté frontend |
 | SMS | Twilio (10DLC) | |
-| Email | Resend | |
+| Email | Resend (stretch) | |
 | Wallet Apple | `passkit-generator` | |
 | Wallet Google | Google Wallet REST API | |
-| Paiements | Stripe (Subscriptions + Invoices) | |
-| Deploy | Railway (API) + Vercel ou Railway (web) | |
-| Observabilité | Sentry + `/health` uptime check | |
+| Paiements | **manuel** (post-pilote: Stripe) | |
+| Deploy | Railway (API) + Vercel (web) | |
+| Observabilité | Sentry + `/health` uptime | |
+| Design | pencil.dev `.pen` dans `/design` | |
 
 ## 7. Architecture de données
 
-### Tables principales
-- **`restaurants`** : id, name, locale (`fr-CA`|`en-CA`), timezone, stripe_customer_id, plan_status, points_per_dollar (default 1), branding_json
-- **`users`** : id, restaurant_id, email, role (`admin`)
-- **`ingredients`** : id, restaurant_id, name, unit, ean_barcode, par_level, cost_per_unit
-- **`inventory_counts`** : id, restaurant_id, ingredient_id, quantity, counted_at, source (`manual`|`scan`)
-- **`recommendations`** : id, restaurant_id, type (`surplus`|`expiring`|`slow_moving`), ingredient_id, payload_json, status, created_at
-- **`promotions`** : id, restaurant_id, triggered_by_recommendation_id, title, description, discount_type, discount_value, starts_at, ends_at, status
-- **`customers`** : id, restaurant_id, phone, email, first_name, opt_in_sms, opt_in_sms_at, opt_in_email, opt_in_email_at, points_balance, lifetime_spend_cents, visit_count, wallet_pass_serial, wallet_platform, created_at
-- **`visits`** : id, restaurant_id, customer_id, amount_cents, points_awarded, registered_by_user_id, registered_at, method (`phone_lookup`|`barcode_scan`)
-- **`rewards`** : id, restaurant_id, name, description, points_cost, active
-- **`redemptions`** : id, restaurant_id, customer_id, reward_id, points_debited, redeemed_at, registered_by_user_id
-- **`campaigns`** : id, restaurant_id, promotion_id, channel, target_audience, sent_count, delivered_count, failed_count, started_at, finished_at
-- **`consent_log`** : id, customer_id, type, action, source, ip, user_agent, timestamp — **obligatoire CASL/Loi 25**
+Tables (voir `packages/database/supabase/migrations/20260422120000_initial_schema.sql` pour SQL complet) :
+
+- **`restaurants`** : id, **owner_id → auth.users(id)**, name, timezone, points_per_dollar
+- **`audits`** : id, restaurant_id, question, response, status (`pending`|`completed`), asked_at, responded_at
+- **`promotions`** : id, restaurant_id, audit_id (FK), content_sms, content_wallet, status (`draft`|`sent`), created_at, sent_at
+- **`customers`** : id, restaurant_id, name, phone, email, opt_in_sms(+at), opt_in_email(+at), points_balance, created_at
+- **`visits`** : id, restaurant_id, customer_id, amount_cents, registered_by, registered_at
+- **`points_transactions`** : id, restaurant_id, customer_id, delta (±), reason (`visit`|`redemption`|`adjustment`), visit_id, note, created_at
+- **`consent_log`** : id, customer_id, type (`sms`|`email`), action (`opt_in`|`opt_out`), source, ip, user_agent, timestamp
 
 ### Règles
-- RLS activée sur toutes les tables avec `restaurant_id`
-- `points_balance` et `lifetime_spend_cents` dénormalisés mais **toujours recalculables** depuis `visits` + `redemptions`
-- Tout changement de points passe par une insertion dans `visits` ou `redemptions`, jamais modification directe
+- RLS activée sur **toutes** les tables. Policy : `restaurant_id in (select id from restaurants where owner_id = auth.uid())`.
+- `points_balance` est dénormalisé mais **toujours recalculable** via `sum(delta) from points_transactions where customer_id = X`
+- **Tout changement de points = insert dans `points_transactions`**, jamais UPDATE direct de `customers.points_balance` sans ligne correspondante
+- Tout opt-in/opt-out SMS ou email = insert dans `consent_log` au même moment que la mise à jour du flag sur `customers`
 
 ## 8. Compliance — non négociable
 
 1. **CASL** : opt-in explicite traçable (`consent_log`), STOP/désabo dans chaque message
-2. **A2P 10DLC** : enregistrement marque + campagne Twilio avant premier SMS (1-3 semaines d'approbation)
-3. **Apple Developer** : compte + Pass Type ID avant sprint wallet (99 USD/an)
-4. **Google Wallet Issuer** : application soumise tôt
-5. **Loi 25 (Québec)** : `consent_log`, politique de confidentialité bilingue, DPO désigné
+2. **A2P 10DLC** : enregistrement Twilio **avant** premier SMS (1-3 sem d'approbation — démarche J+0)
+3. **Apple Developer** : Pass Type ID requis avant sprint wallet (99 USD/an — démarche J+0)
+4. **Google Wallet Issuer** : demande soumise J+0
+5. **Loi 25** : `consent_log`, politique confidentialité FR, DPO désigné
 
 ## 9. Règles pour Claude Code
 
-1. **Ne jamais coder une feature non listée dans la section 4.** Idée qui surgit → `BACKLOG.md`.
-2. **Chaque PR cite** la section du pilote qui l'a demandée OU la section 4.
-3. **Bilingue dès le départ** : aucun string en dur côté frontend. Tout via i18n. Prompts IA prennent `locale`.
+1. **Aucune feature hors section 4.** Idée qui surgit → `BACKLOG.md`.
+2. **Chaque PR cite** la section 4 ou l'usage pilote qui la motive.
+3. **Français en dur** côté frontend. Pas d'i18n, pas de `useTranslation`, pas de fichiers `locales/`. Prompts IA en FR.
 4. **Pas de mocks cachés** : tout mock derrière un flag `USE_MOCK_*` logué au démarrage.
-5. **Tests critical path seulement** au MVP : calcul des points, génération wallet pass, logique IA recommandations.
-6. **Secrets** : jamais commit. `.env.example` à jour à chaque variable.
+5. **Tests critical path seulement** : calcul des points (`points_transactions` → `points_balance`), génération wallet pass, prompt IA audit → promo.
+6. **Secrets** : jamais commit. `.env.example` à jour.
 7. **RLS d'abord** : aucune table avec `restaurant_id` en prod sans policy RLS vérifiée.
-8. **Points jamais modifiés directement** : toujours via `visits` ou `redemptions` + update transactionnel.
-9. **Pas de nouvelle lib sans justification** dans le commit message. YAGNI.
-10. **Design-first pour toute nouvelle page** : avant de coder un nouvel écran dans `apps/web`, le `.pen` correspondant doit exister dans `/design` et refléter la version finale voulue.
-11. **Tokens de design dans `design/design-system.pen` uniquement** : couleurs, typographie, spacing sont définis là et propagés au code via variables Tailwind. Pas de valeurs magiques hardcodées dans les composants.
+8. **Points uniquement via `points_transactions`** : INSERT de la ligne + UPDATE du `points_balance` doivent être dans la même transaction Postgres.
+9. **Pas de nouvelle lib sans justification** dans le commit. YAGNI.
+10. **Design-first pour toute nouvelle page** : le `.pen` correspondant doit exister dans `/design` avant le code.
+11. **Tokens de design dans `design/design-system.pen` uniquement** : couleurs, typo, spacing définis là et propagés au code via variables Tailwind.
 
-## 10. Feuille de route — 6 semaines
+## 10. Feuille de route — 14 jours (Sprint unique)
 
-| Semaine | Focus | Livrable |
+| Jour | Focus | Livrable |
 |---|---|---|
-| 0 | Setup repo + meeting pilote + démarches admin + design-system.pen | Scaffolding monorepo, Apple Dev + Google Wallet Issuer soumis, Twilio 10DLC soumis, meeting pilote fait, tokens de design posés |
-| 1 | Auth + Stock | Login admin Supabase, CRUD ingrédients, scan code-barres, i18n en place, `stock.pen` codé |
-| 2 | Clients + Fidélité + Wallet | Flow inscription, enregistrement visite, génération pass Apple + Google, points affichés |
-| 3 | Agent IA + onboarding pilote | Détection surplus → suggestion promo, pilote installé, **première facture manuelle** |
-| 4 | Campagnes SMS + Email | Premier envoi via promo IA, mécanisme STOP, log CASL |
-| 5 | Itération + tests critical path + 2e pilote pitché | Bugs fix, tests stock+wallet+IA, 3-5 démos faites |
-| 6 | Productisation | Stripe subscription, landing bilingue, Sentry, prix validé |
+| J+0 (aujourd'hui) | Démarches externes + schema | Apple Dev + Google Wallet + Twilio 10DLC **soumis**, migration Supabase appliquée, RLS vérifiée |
+| J+1→J+3 | Auth + CRUD resto + CRM clients | Login owner, création resto, ajout client depuis dashboard, formulaire public FR, opt-ins + `consent_log` |
+| J+4→J+6 | Option C + IA | Cron hebdo → insertion `audits`, UI réponse texte libre, appel Claude API → promo générée (SMS + wallet) |
+| J+7→J+9 | Wallet + visites | Pass Apple + Google générés, enregistrement visite + `points_transactions`, push wallet |
+| J+10→J+11 | Campagnes SMS | Envoi Twilio, STOP, journal dans `promotions.status = 'sent'` |
+| J+12→J+13 | Durcissement | Bugs, Sentry, `/health`, démo test interne, ajustements visuels |
+| **J+14 (2026-05-06)** | **Démo pilote La Boîte Jaune** | **Installation, première promo envoyée en vrai** |
+
+**Règle d'or du sprint** : si au jour J un item du chemin critique déborde, on coupe la feature la moins essentielle (dans l'ordre : email, formulaire public, Google Wallet si Apple marche). **On ne décale pas le J+14.**
 
 ## 11. Questions ouvertes
 
-- [ ] Nom du produit + domaine
+- [ ] Nom du produit + domaine (actuellement "Restaux." de placeholder)
 - [ ] Nom légal de l'entité qui facture
-- [ ] Prix validé par pilote
-- [ ] Définir les tokens de `design-system.pen` (couleurs primaire/secondaire, typo) — bloquant pour cohérence visuelle
+- [ ] Montant et modalités de la facture manuelle pilote (validé avant J+7)
+- [ ] Tokens `design-system.pen` finaux (couleur primaire : jaune La Boîte Jaune ?)
 
 ---
 
-**Règle d'or** : si ce document et ton instinct divergent, pause, relis la section 1 et la section 5. Ton instinct veut probablement ajouter une feature. Ne le fais pas.
+**Règle d'or** : si ce document et ton instinct divergent, pause, relis §1 et §5. Ton instinct veut probablement ajouter une feature. **Tu as 14 jours.** Ne le fais pas.

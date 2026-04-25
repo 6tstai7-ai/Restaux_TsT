@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createServer } from "./server.js";
 
 const port = Number(process.env.API_PORT ?? 3001);
