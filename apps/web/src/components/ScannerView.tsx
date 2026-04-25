@@ -187,7 +187,7 @@ export default function ScannerView() {
                 constraints={{ facingMode: "environment" }}
                 formats={["qr_code"]}
                 scanDelay={500}
-                components={{ finder: false, audio: false, torch: true }}
+                components={{ finder: false, audio: false, torch: true } as any}
                 styles={{
                   container: { width: "100%", height: "100%" },
                   video: { width: "100%", height: "100%", objectFit: "cover" }
