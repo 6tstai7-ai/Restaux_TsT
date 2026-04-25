@@ -5,7 +5,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export function createPublicRestaurantController(supabase: SupabaseClient) {
   return async (req: Request, res: Response) => {
-    const id = req.params.id;
+    const idParam = req.params.id;
+    const id = typeof idParam === "string" ? idParam : "";
     if (!id || !UUID_RE.test(id)) {
       return res.status(400).json({ success: false, error: "id invalide" });
     }

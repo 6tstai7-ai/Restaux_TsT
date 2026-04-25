@@ -71,7 +71,7 @@ export function createWalletController(supabase: SupabaseClient) {
           wwdr,
           signerCert,
           signerKey,
-          signerKeyPassphrase: process.env.APPLE_SIGNER_KEY_PASSPHRASE
+          signerKeyPassphrase: process.env.APPLE_SIGNER_KEY_PASSPHRASE ?? ""
         },
         {
           formatVersion: 1,

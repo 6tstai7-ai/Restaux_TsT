@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@app/config": "workspace:*",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^22.7.5",
     "tsx": "^4.19.1",
