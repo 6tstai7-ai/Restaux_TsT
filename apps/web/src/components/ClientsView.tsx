@@ -120,10 +120,10 @@ export default function ClientsView() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans antialiased">
-      <div className="mx-auto max-w-5xl px-8 py-16">
-        <header className="mb-16 flex items-end justify-between">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 md:px-8 md:py-16">
+        <header className="mb-10 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-light tracking-tight">Clients</h1>
+            <h1 className="text-2xl md:text-3xl font-light tracking-tight">Clients</h1>
             <p className="mt-2 text-sm text-zinc-500">Base fidélité — La Boîte Jaune</p>
           </div>
           <DashboardNav />
@@ -160,7 +160,7 @@ export default function ClientsView() {
 
         <section>
           <div className="border-t border-zinc-800">
-            <div className="grid grid-cols-[1fr_1fr_80px_160px] gap-6 py-4 text-xs uppercase tracking-widest text-zinc-500">
+            <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_160px] gap-6 py-4 text-xs uppercase tracking-widest text-zinc-500">
               <div>Nom</div>
               <div>Téléphone</div>
               <div className="text-right">Points</div>
@@ -179,16 +179,21 @@ export default function ClientsView() {
               customers.map((c) => (
                 <div
                   key={c.id}
-                  className="grid grid-cols-[1fr_1fr_80px_160px] items-center gap-6 border-t border-zinc-900 py-4 text-sm"
+                  className="flex flex-col gap-3 border-t border-zinc-900 py-4 text-sm md:grid md:grid-cols-[1fr_1fr_80px_160px] md:items-center md:gap-6"
                 >
-                  <div className="text-zinc-100">{c.name ?? "—"}</div>
+                  <div className="flex items-center justify-between gap-3 md:block">
+                    <span className="text-zinc-100">{c.name ?? "—"}</span>
+                    <span className="text-xs text-orange-400 font-bold tabular-nums md:hidden">
+                      {c.points_balance ?? 0} pts
+                    </span>
+                  </div>
                   <div className="text-zinc-400">{c.phone ?? "—"}</div>
-                  <div className="text-right text-zinc-400 tabular-nums">{c.points_balance ?? 0}</div>
-                  <div className="text-right">
+                  <div className="hidden md:block text-right text-zinc-400 tabular-nums">{c.points_balance ?? 0}</div>
+                  <div className="md:text-right">
                     <button
                       onClick={() => handleGeneratePass(c.id)}
                       disabled={pendingId === c.id}
-                      className="border border-zinc-800 px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="w-full md:w-auto border border-zinc-800 px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       {pendingId === c.id ? "Génération…" : "Générer pass"}
                     </button>

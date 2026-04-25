@@ -91,10 +91,10 @@ export default function LoyaltySettings() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans antialiased">
-      <div className="mx-auto max-w-6xl px-8 py-16">
-        <header className="mb-16 flex items-end justify-between">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 md:px-8 md:py-16">
+        <header className="mb-10 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-light tracking-tight">Identité de la carte</h1>
+            <h1 className="text-2xl md:text-3xl font-light tracking-tight">Identité de la carte</h1>
             <p className="mt-2 text-sm text-zinc-500">Couleurs et description de ta carte fidélité Wallet</p>
           </div>
           <DashboardNav />
@@ -181,8 +181,8 @@ function PublicLinkSection({ restaurantId }: { restaurantId: string }) {
         Partage ce lien ou génère un QR à afficher au comptoir pour que tes clients rejoignent ta base fidélité.
       </p>
 
-      <div className="mt-6 flex items-center gap-3 border border-zinc-800 px-4 py-3">
-        <code className="flex-1 truncate text-sm font-mono text-zinc-300">{url}</code>
+      <div className="mt-6 flex flex-col gap-3 border border-zinc-800 px-4 py-3 sm:flex-row sm:items-center">
+        <code className="min-w-0 flex-1 truncate text-sm font-mono text-zinc-300">{url}</code>
         <button
           type="button"
           onClick={handleCopy}
