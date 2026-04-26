@@ -29,12 +29,31 @@ const SYSTEM_PROMPT =
 export function createServer(): Express {
   const app = express();
 
-  const frontendUrl = process.env.FRONTEND_URL ?? process.env.WEB_BASE_URL;
-  const allowedOrigins = Array.from(
-    new Set([frontendUrl, "http://localhost:5173"].filter((o): o is string => !!o))
+  const staticAllowed = new Set<string>([
+    "http://localhost:5173",
+    "https://restaux-ts-t.vercel.app"
+  ]);
+  const extraOrigin = process.env.FRONTEND_URL ?? process.env.WEB_BASE_URL;
+  if (extraOrigin) staticAllowed.add(extraOrigin);
+  const vercelPreview = /^https:\/\/restaux-ts-t-[a-z0-9-]+\.vercel\.app$/;
+
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (staticAllowed.has(origin)) return cb(null, true);
+        if (vercelPreview.test(origin)) return cb(null, true);
+        console.warn(`[cors] origine refusée: ${origin}`);
+        return cb(new Error(`Origin not allowed: ${origin}`));
+      }
+    })
   );
-  app.use(cors({ origin: allowedOrigins }));
   app.use(express.json());
+
+  app.use((req, _res, next) => {
+    console.log(`[req] ${req.method} ${req.url}`);
+    next();
+  });
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
