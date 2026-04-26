@@ -8,6 +8,7 @@ import { useSession } from "@/hooks/useSession";
 import DashboardNav from "@/components/DashboardNav";
 
 const AUDIT_QUESTION = "Bonjour, quels sont vos 2-3 surplus ou produits à écouler aujourd'hui ?";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 type AuditStatus = 'idle' | 'saving' | 'generating' | 'saved' | 'error';
 type SendStatus = 'idle' | 'sending' | 'sent' | 'error';
@@ -205,7 +206,7 @@ const DemoDashboard = () => {
 
     setAuditStatus('generating');
     try {
-      const res = await fetch('/api/generate-promo', {
+      const res = await fetch(`${API_BASE}/api/generate-promo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audit_id: audit.id })
@@ -233,7 +234,7 @@ const DemoDashboard = () => {
     setSendStatus('sending');
     setSendError(null);
     try {
-      const res = await fetch(`/api/promotions/${promotionId}/send`, {
+      const res = await fetch(`${API_BASE}/api/promotions/${promotionId}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
