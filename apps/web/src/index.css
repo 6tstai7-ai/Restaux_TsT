@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Foundation — neutral, professional, dark-first */
+  --color-bg:            #0B0B0C;
+  --color-surface:       #16171A;
+  --color-surface-2:     #1F2024;
+  --color-border:        #2A2C31;
+  --color-border-strong: #3D4047;
+
+  /* Type — neutral off-white, no warm or cool bias */
+  --color-text:          #ECEDEF;
+  --color-text-muted:    #9DA0A6;
+  --color-text-dim:      #686B72;
+
+  /* Restaux brand accent — bone off-white, the product's own signature */
+  --color-brand:         #E8E5DE;
+  --color-brand-ink:     #0B0B0C;
+
+  /* Semantic states — fixed, never tenant-overridden */
+  --color-success:       #5DAE7A;
+  --color-warning:       #D4A24C;
+  --color-danger:        #D9534B;
+  --color-info:          #6F8AA0;
+
+  /* Typography stacks */
+  --font-display: "Inter Display", system-ui, sans-serif;
+  --font-sans:    "Inter Tight", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* shadcn convention — same palette under .dark, dark-first single theme */
+.dark {
+  --color-bg:            #0B0B0C;
+  --color-surface:       #16171A;
+  --color-surface-2:     #1F2024;
+  --color-border:        #2A2C31;
+  --color-border-strong: #3D4047;
+  --color-text:          #ECEDEF;
+  --color-text-muted:    #9DA0A6;
+  --color-text-dim:      #686B72;
+  --color-brand:         #E8E5DE;
+  --color-brand-ink:     #0B0B0C;
+  --color-success:       #5DAE7A;
+  --color-warning:       #D4A24C;
+  --color-danger:        #D9534B;
+  --color-info:          #6F8AA0;
+}
+
 @layer base {
   *,
   *::before,
@@ -9,10 +56,42 @@
     box-sizing: border-box;
   }
 
+  html {
+    font-family: var(--font-sans);
+  }
+
   html,
   body,
   #root {
     max-width: 100vw;
     overflow-x: hidden;
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  body {
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

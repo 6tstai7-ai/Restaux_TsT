@@ -205,7 +205,7 @@ export default function PublicEnrollment() {
               </label>
 
               {submitError && (
-                <p className="text-sm" style={{ color: "#fca5a5" }}>{submitError}</p>
+                <p className="text-sm" style={{ color: "var(--color-danger)" }}>{submitError}</p>
               )}
 
               <button
@@ -248,7 +248,7 @@ export default function PublicEnrollment() {
               </p>
             )}
             {passError && (
-              <p className="mt-5 text-sm" style={{ color: "#fca5a5" }}>{passError}</p>
+              <p className="mt-5 text-sm" style={{ color: "var(--color-danger)" }}>{passError}</p>
             )}
           </div>
         )}
