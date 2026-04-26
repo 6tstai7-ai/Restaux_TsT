@@ -1,21 +1,25 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { Menu, X, LayoutDashboard, Users, CreditCard, ScanLine } from "lucide-react";
 
 const LINKS = [
-  { to: "/dashboard", label: "Tableau de bord" },
-  { to: "/customers", label: "Clients" },
-  { to: "/loyalty", label: "Identité carte" },
-  { to: "/scanner", label: "Scanner" }
+  { to: "/dashboard", label: "Tableau de bord", Icon: LayoutDashboard },
+  { to: "/customers", label: "Clients", Icon: Users },
+  { to: "/loyalty", label: "Identité carte", Icon: CreditCard },
+  { to: "/scanner", label: "Scanner", Icon: ScanLine }
 ];
 
-const linkBase = "text-xs uppercase tracking-widest transition-colors";
-const linkActive = "text-zinc-100 border-b border-zinc-100 pb-1";
-const linkInactive = "text-zinc-500 hover:text-zinc-300 pb-1";
+const desktopBase =
+  "relative pb-2 text-micro uppercase tracking-[0.08em] transition-colors duration-180 ease-out-punched";
+const desktopActive = "text-[var(--color-text)]";
+const desktopInactive = "text-[var(--color-text-muted)] hover:text-[var(--color-text)]";
 
-const mobileLinkBase =
-  "block w-full px-4 py-4 text-sm uppercase tracking-widest transition-colors min-h-[44px]";
-const mobileLinkActive = "text-zinc-100 bg-zinc-900";
-const mobileLinkInactive = "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900";
+const mobileBase =
+  "flex items-center gap-3 w-full pl-4 pr-4 py-4 border-l-[3px] text-sm tracking-wide transition-colors duration-180 ease-out-punched min-h-[48px]";
+const mobileActive =
+  "border-l-[var(--tenant-accent)] text-[var(--color-text)] bg-[var(--color-surface-2)]";
+const mobileInactive =
+  "border-l-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]";
 
 export default function DashboardNav() {
   const [open, setOpen] = useState(false);
@@ -32,15 +36,25 @@ export default function DashboardNav() {
   return (
     <>
       <nav className="hidden items-center gap-8 md:flex">
-        {LINKS.map((l) => (
+        {LINKS.map(({ to, label }) => (
           <NavLink
-            key={l.to}
-            to={l.to}
+            key={to}
+            to={to}
             className={({ isActive }) =>
-              `${linkBase} ${isActive ? linkActive : linkInactive}`
+              `${desktopBase} ${isActive ? desktopActive : desktopInactive}`
             }
           >
-            {l.label}
+            {({ isActive }) => (
+              <>
+                <span>{label}</span>
+                {isActive && (
+                  <span
+                    aria-hidden
+                    className="absolute left-0 right-0 -bottom-0.5 h-0.5 bg-[var(--tenant-accent)]"
+                  />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -50,18 +64,10 @@ export default function DashboardNav() {
         aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex h-11 w-11 items-center justify-center border border-zinc-800 text-zinc-200 md:hidden"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors duration-180 ease-out-punched md:hidden"
       >
         <span className="sr-only">Menu</span>
-        {open ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        )}
+        {open ? <X size={20} strokeWidth={1.75} /> : <Menu size={20} strokeWidth={1.75} />}
       </button>
 
       {open && (
@@ -72,38 +78,37 @@ export default function DashboardNav() {
         />
       )}
       <div
-        className={`fixed inset-x-0 top-0 z-50 transform border-b border-zinc-800 bg-black transition-transform md:hidden ${
+        className={`fixed inset-x-0 top-0 z-50 transform border-b border-[var(--color-border)] bg-[var(--color-bg)] transition-transform duration-240 ease-out-punched md:hidden ${
           open ? "translate-y-0" : "-translate-y-full"
         }`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-900">
-          <span className="text-lg font-extrabold tracking-tighter italic text-white">
-            RESTAUX.
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)]">
+          <span className="font-display text-lg font-bold tracking-tight text-[var(--color-text)]">
+            RESTAUX
           </span>
           <button
             type="button"
             aria-label="Fermer le menu"
             onClick={() => setOpen(false)}
-            className="flex h-11 w-11 items-center justify-center border border-zinc-800 text-zinc-200"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
+            <X size={20} strokeWidth={1.75} />
           </button>
         </div>
         <nav className="flex flex-col py-2">
-          {LINKS.map((l) => (
+          {LINKS.map(({ to, label, Icon }) => (
             <NavLink
-              key={l.to}
-              to={l.to}
+              key={to}
+              to={to}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
-                `${mobileLinkBase} ${isActive ? mobileLinkActive : mobileLinkInactive}`
+                `${mobileBase} ${isActive ? mobileActive : mobileInactive}`
               }
             >
-              {l.label}
+              <Icon size={20} strokeWidth={1.75} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>

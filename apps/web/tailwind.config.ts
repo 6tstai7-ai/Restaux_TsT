@@ -62,7 +62,14 @@ export default {
           foreground: "var(--color-text)"
         },
         input: "var(--color-border)",
-        ring: "var(--color-border-strong)"
+        ring: "var(--color-border-strong)",
+
+        // Tenant accent — flexes per-restaurant via CSS var
+        tenant: {
+          DEFAULT: "var(--tenant-accent)",
+          hover: "var(--tenant-accent-hover)",
+          ink: "var(--tenant-accent-ink)"
+        }
       },
       fontFamily: {
         display: ['"Inter Display"', "system-ui", "sans-serif"],

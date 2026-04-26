@@ -25,6 +25,11 @@
   --color-danger:        #D9534B;
   --color-info:          #6F8AA0;
 
+  /* Tenant accent — default fallback, overridden per-tenant via [data-tenant-theme] */
+  --tenant-accent:       #F4C20D;
+  --tenant-accent-hover: #F6CC2E;
+  --tenant-accent-ink:   #0B0B0C;
+
   /* Typography stacks */
   --font-display: "Inter Display", system-ui, sans-serif;
   --font-sans:    "Inter Tight", system-ui, sans-serif;

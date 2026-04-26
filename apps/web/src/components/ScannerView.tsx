@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Scanner, type IDetectedBarcode } from "@yudiel/react-qr-scanner";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Flashlight, FlashlightOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
-import DashboardNav from "@/components/DashboardNav";
 
 type Customer = {
   id: string;
@@ -10,9 +11,17 @@ type Customer = {
   points_balance: number | null;
 };
 
-type Stage = "scanning" | "form" | "success";
+type Stage = "scanning" | "actions" | "visit" | "redeem" | "success";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const FLOATING_CHIP =
+  "rounded-full border border-border-strong/60 backdrop-blur-md " +
+  "transition-colors duration-180 ease-out-punched";
+
+const FLOATING_BG: React.CSSProperties = {
+  backgroundColor: "color-mix(in srgb, var(--color-surface) 55%, transparent)"
+};
 
 export default function ScannerView() {
   const { session } = useSession();
@@ -22,10 +31,15 @@ export default function ScannerView() {
 
   const [stage, setStage] = useState<Stage>("scanning");
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [torch, setTorch] = useState(false);
+
   const [amount, setAmount] = useState("");
+  const [redeemReason, setRedeemReason] = useState("");
+  const [redeemPoints, setRedeemPoints] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [awardedPoints, setAwardedPoints] = useState(0);
+  const [delta, setDelta] = useState(0);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -51,13 +65,35 @@ export default function ScannerView() {
     })();
   }, [session?.user?.id]);
 
+  // Drive torch via the live MediaStreamTrack; silent no-op on devices without support.
+  useEffect(() => {
+    const video = document.querySelector<HTMLVideoElement>("video");
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = (track.getCapabilities?.() ?? {}) as MediaTrackCapabilities & { torch?: boolean };
+    if (!caps.torch) return;
+    track.applyConstraints({ advanced: [{ torch } as MediaTrackConstraintSet] }).catch(() => {});
+  }, [torch]);
+
   const resetToScan = useCallback(() => {
     setCustomer(null);
     setAmount("");
+    setRedeemReason("");
+    setRedeemPoints("");
     setError(null);
-    setAwardedPoints(0);
+    setDelta(0);
     setStage("scanning");
   }, []);
+
+  useEffect(() => {
+    if (stage === "scanning") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") resetToScan();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage, resetToScan]);
 
   const handleDetected = useCallback(
     async (codes: IDetectedBarcode[]) => {
@@ -71,7 +107,7 @@ export default function ScannerView() {
         return;
       }
 
-      setStage("form");
+      setStage("actions");
       setError(null);
 
       const { data, error: err } = await supabase
@@ -96,7 +132,7 @@ export default function ScannerView() {
     [stage, restaurantId]
   );
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleVisit(e: FormEvent) {
     e.preventDefault();
     if (!customer || !restaurantId) return;
     const parsed = Number(amount.replace(",", "."));
@@ -109,119 +145,189 @@ export default function ScannerView() {
     setError(null);
 
     const amountCents = Math.round(parsed * 100);
-    const delta = Math.round(parsed * pointsPerDollar);
-    const userId = session?.user?.id ?? null;
+    const d = Math.round(parsed * pointsPerDollar);
 
-    const { data: visit, error: visitErr } = await supabase
-      .from("visits")
-      .insert({
-        restaurant_id: restaurantId,
-        customer_id: customer.id,
-        amount_cents: amountCents,
-        registered_by: userId
-      })
-      .select("id")
-      .single();
-
-    if (visitErr || !visit) {
-      setSubmitting(false);
-      setError(visitErr?.message ?? "Échec enregistrement visite.");
-      return;
-    }
-
-    const { error: txErr } = await supabase.from("points_transactions").insert({
-      restaurant_id: restaurantId,
-      customer_id: customer.id,
-      delta,
-      reason: "visit",
-      visit_id: visit.id
+    const { error: rpcErr } = await supabase.rpc("record_visit_and_points", {
+      p_restaurant_id: restaurantId,
+      p_customer_id: customer.id,
+      p_points_added: d,
+      p_spend_amount: amountCents
     });
 
-    if (txErr) {
-      setSubmitting(false);
-      setError(txErr.message);
+    setSubmitting(false);
+    if (rpcErr) {
+      setError(rpcErr.message);
       return;
     }
 
-    const newBalance = (customer.points_balance ?? 0) + delta;
-    const { error: balErr } = await supabase
-      .from("customers")
-      .update({ points_balance: newBalance })
-      .eq("id", customer.id);
+    setDelta(d);
+    setStage("success");
+  }
+
+  async function handleRedeem(e: FormEvent) {
+    e.preventDefault();
+    if (!customer || !restaurantId) return;
+
+    const reason = redeemReason.trim();
+    const pts = Number.parseInt(redeemPoints, 10);
+    if (!reason) {
+      setError("Raison requise.");
+      return;
+    }
+    if (!Number.isFinite(pts) || pts <= 0) {
+      setError("Points invalides.");
+      return;
+    }
+    if (pts > (customer.points_balance ?? 0)) {
+      setError("Solde insuffisant.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    const { error: rpcErr } = await supabase.rpc("record_redemption", {
+      p_restaurant_id: restaurantId,
+      p_customer_id: customer.id,
+      p_points_deducted: pts,
+      p_reason: reason
+    });
 
     setSubmitting(false);
-    if (balErr) {
-      setError(balErr.message);
+    if (rpcErr) {
+      setError(rpcErr.message);
       return;
     }
 
-    setAwardedPoints(delta);
+    setDelta(-pts);
     setStage("success");
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans antialiased">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
-        <header className="mb-10 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-light tracking-tight">Scanner</h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Enregistrer une visite · {pointsPerDollar} pt / $ CAD
-            </p>
-          </div>
-          <DashboardNav />
-        </header>
-
-        {bootError && (
-          <p className="mb-6 text-xs text-red-400">{bootError}</p>
+    <div className="fixed inset-0 bg-bg text-text">
+      <div className="absolute inset-0">
+        {restaurantId && (
+          <Scanner
+            onScan={handleDetected}
+            onError={(err) =>
+              setError(err instanceof Error ? err.message : "Erreur caméra")
+            }
+            constraints={{ facingMode: "environment" }}
+            formats={["qr_code"]}
+            scanDelay={500}
+            components={{ finder: false, audio: false, torch: false } as never}
+            styles={{
+              container: { width: "100%", height: "100%" },
+              video: { width: "100%", height: "100%", objectFit: "cover" }
+            }}
+          />
         )}
+      </div>
 
-        {stage === "scanning" && (
-          <section className="mx-auto max-w-md">
-            <div className="relative aspect-square w-full overflow-hidden border border-zinc-800 bg-zinc-950">
-              <Scanner
-                onScan={handleDetected}
-                onError={(err) =>
-                  setError(err instanceof Error ? err.message : "Erreur caméra")
-                }
-                constraints={{ facingMode: "environment" }}
-                formats={["qr_code"]}
-                scanDelay={500}
-                components={{ finder: false, audio: false, torch: true } as any}
-                styles={{
-                  container: { width: "100%", height: "100%" },
-                  video: { width: "100%", height: "100%", objectFit: "cover" }
-                }}
-              />
-              <div className="pointer-events-none absolute inset-6 border border-zinc-100/40" />
-            </div>
-            <p className="mt-6 text-center text-xs uppercase tracking-widest text-zinc-500">
-              Pointez la caméra sur le code-barres du pass
-            </p>
-            {error && (
-              <p className="mt-4 text-center text-xs text-red-400">{error}</p>
+      {stage === "scanning" && !bootError && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="h-64 w-64 max-h-[70vw] max-w-[70vw] border border-text/40" />
+        </div>
+      )}
+
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 sm:p-6">
+        <Link
+          to="/dashboard"
+          aria-label="Retour"
+          className={`${FLOATING_CHIP} flex h-12 w-12 items-center justify-center text-text hover:text-text`}
+          style={FLOATING_BG}
+        >
+          <ArrowLeft size={20} strokeWidth={1.75} />
+        </Link>
+        <button
+          type="button"
+          onClick={() => setTorch((t) => !t)}
+          aria-label={torch ? "Éteindre la lampe" : "Allumer la lampe"}
+          aria-pressed={torch}
+          className={`${FLOATING_CHIP} flex h-12 w-12 items-center justify-center text-text`}
+          style={FLOATING_BG}
+        >
+          {torch ? (
+            <Flashlight size={20} strokeWidth={1.75} />
+          ) : (
+            <FlashlightOff size={20} strokeWidth={1.75} />
+          )}
+        </button>
+      </div>
+
+      {stage === "scanning" && !bootError && (
+        <div className="absolute inset-x-0 bottom-0 flex justify-center p-6">
+          <p
+            className={`${FLOATING_CHIP} px-4 py-2 text-micro uppercase text-text-muted`}
+            style={FLOATING_BG}
+          >
+            Pointez la caméra sur le code QR
+          </p>
+        </div>
+      )}
+
+      {bootError && (
+        <div className="absolute inset-x-0 bottom-24 flex justify-center px-6">
+          <p
+            className={`${FLOATING_CHIP} px-4 py-2 text-caption text-danger`}
+            style={FLOATING_BG}
+          >
+            {bootError}
+          </p>
+        </div>
+      )}
+
+      {stage !== "scanning" && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="absolute inset-x-0 bottom-0 border-t border-border bg-surface text-text"
+        >
+          <div className="mx-auto w-full max-w-md px-6 pb-8 pt-6">
+            <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-border-strong" />
+
+            {customer && (
+              <>
+                <p className="text-micro uppercase text-text-muted">Client</p>
+                <h2 className="mt-1 font-display text-h2 text-text">
+                  {customer.name ?? "—"}
+                </h2>
+                <p className="mt-2 font-mono text-body tabular-nums text-text-muted">
+                  Solde · {(customer.points_balance ?? 0).toString()} pts
+                </p>
+              </>
             )}
-          </section>
-        )}
 
-        {stage === "form" && (
-          <section className="mx-auto max-w-md">
-            <div className="border border-zinc-800 p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500">
-                Ajouter des points pour
-              </p>
-              <h2 className="mt-2 text-2xl font-light tracking-tight text-zinc-100">
-                {customer?.name ?? "—"}
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500 tabular-nums">
-                Solde actuel · {customer?.points_balance ?? 0} pts
-              </p>
+            {stage === "actions" && (
+              <div className="mt-8 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setStage("visit")}
+                  className="flex h-12 w-full items-center justify-center rounded-lg bg-brand px-6 text-body font-semibold text-brand-ink transition-colors duration-180 ease-out-punched hover:opacity-90"
+                >
+                  Enregistrer une visite
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStage("redeem")}
+                  className="flex h-12 w-full items-center justify-center rounded-lg border border-border-strong bg-transparent px-6 text-body font-semibold text-text transition-colors duration-180 ease-out-punched hover:bg-surface-2"
+                >
+                  Rédemption
+                </button>
+                <button
+                  type="button"
+                  onClick={resetToScan}
+                  className="flex h-12 w-full items-center justify-center px-6 text-caption text-text-muted transition-colors duration-180 ease-out-punched hover:text-text"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
 
-              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            {stage === "visit" && (
+              <form onSubmit={handleVisit} className="mt-8 space-y-4">
                 <label className="block">
-                  <span className="text-xs uppercase tracking-widest text-zinc-500">
-                    Montant dépensé ($)
-                  </span>
+                  <span className="text-caption text-text-muted">Montant dépensé ($)</span>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -232,56 +338,112 @@ export default function ScannerView() {
                     placeholder="0,00"
                     autoFocus
                     required
-                    className="mt-2 w-full bg-transparent border border-zinc-800 px-4 py-4 text-lg text-zinc-100 tabular-nums placeholder-zinc-700 focus:border-zinc-500 focus:outline-none transition-colors"
+                    className="mt-2 block w-full rounded-lg border border-border bg-surface-2 px-4 py-3 font-mono text-body-l tabular-nums text-text placeholder:text-text-dim focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/40"
                   />
                 </label>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={resetToScan}
-                    disabled={submitting}
-                    className="flex-1 border border-zinc-800 px-4 py-3 text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 border border-zinc-100 bg-zinc-100 px-4 py-3 text-sm font-medium text-black hover:bg-transparent hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {submitting ? "Enregistrement…" : "Ajouter"}
-                  </button>
-                </div>
-
-                {error && <p className="text-xs text-red-400">{error}</p>}
+                <p className="text-caption text-text-muted">
+                  Taux · {pointsPerDollar} pt / $ CAD
+                </p>
+                <FormFooter
+                  submitting={submitting}
+                  onCancel={() => setStage("actions")}
+                  submitLabel="Enregistrer"
+                />
+                {error && <p className="text-caption text-danger">{error}</p>}
               </form>
-            </div>
-          </section>
-        )}
+            )}
 
-        {stage === "success" && (
-          <section className="mx-auto max-w-md text-center">
-            <div className="border border-zinc-800 p-10">
-              <p className="text-xs uppercase tracking-widest text-zinc-500">
-                Visite enregistrée
-              </p>
-              <p className="mt-6 text-5xl font-light tracking-tight text-zinc-100 tabular-nums">
-                +{awardedPoints}
-              </p>
-              <p className="mt-2 text-sm text-zinc-400">
-                points ajoutés à {customer?.name ?? "—"}
-              </p>
-              <button
-                onClick={resetToScan}
-                className="mt-10 w-full border border-zinc-100 bg-zinc-100 px-6 py-4 text-sm font-medium text-black hover:bg-transparent hover:text-zinc-100 transition-colors"
-              >
-                Scanner une autre carte
-              </button>
-            </div>
-          </section>
-        )}
-      </div>
+            {stage === "redeem" && (
+              <form onSubmit={handleRedeem} className="mt-8 space-y-4">
+                <label className="block">
+                  <span className="text-caption text-text-muted">Raison</span>
+                  <input
+                    type="text"
+                    value={redeemReason}
+                    onChange={(e) => setRedeemReason(e.target.value)}
+                    placeholder="Ex. café offert"
+                    autoFocus
+                    required
+                    maxLength={120}
+                    className="mt-2 block w-full rounded-lg border border-border bg-surface-2 px-4 py-3 text-body text-text placeholder:text-text-dim focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-caption text-text-muted">Points à retirer</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    value={redeemPoints}
+                    onChange={(e) => setRedeemPoints(e.target.value)}
+                    placeholder="0"
+                    required
+                    className="mt-2 block w-full rounded-lg border border-border bg-surface-2 px-4 py-3 font-mono text-body-l tabular-nums text-text placeholder:text-text-dim focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/40"
+                  />
+                </label>
+                <FormFooter
+                  submitting={submitting}
+                  onCancel={() => setStage("actions")}
+                  submitLabel="Rédemption"
+                />
+                {error && <p className="text-caption text-danger">{error}</p>}
+              </form>
+            )}
+
+            {stage === "success" && (
+              <div className="mt-8">
+                <p className="text-micro uppercase text-text-muted">
+                  {delta >= 0 ? "Visite enregistrée" : "Rédemption enregistrée"}
+                </p>
+                <p className="mt-3 font-mono text-display-l tabular-nums text-text">
+                  {delta > 0 ? "+" : ""}
+                  {delta}
+                </p>
+                <p className="mt-1 text-caption text-text-muted">
+                  {delta >= 0 ? "points ajoutés" : "points retirés"}
+                </p>
+                <button
+                  onClick={resetToScan}
+                  className="mt-8 flex h-12 w-full items-center justify-center rounded-lg bg-brand px-6 text-body font-semibold text-brand-ink transition-colors duration-180 ease-out-punched hover:opacity-90"
+                >
+                  Scanner une autre carte
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormFooter({
+  submitting,
+  onCancel,
+  submitLabel
+}: {
+  submitting: boolean;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <div className="flex gap-3 pt-2">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={submitting}
+        className="flex h-12 flex-1 items-center justify-center rounded-lg border border-border-strong bg-transparent px-4 text-body font-semibold text-text transition-colors duration-180 ease-out-punched hover:bg-surface-2 disabled:opacity-40"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        disabled={submitting}
+        className="flex h-12 flex-1 items-center justify-center rounded-lg bg-brand px-4 text-body font-semibold text-brand-ink transition-colors duration-180 ease-out-punched hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {submitting ? "Envoi…" : submitLabel}
+      </button>
     </div>
   );
 }

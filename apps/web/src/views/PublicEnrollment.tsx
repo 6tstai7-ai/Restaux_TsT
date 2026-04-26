@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
+import { Wallet } from "lucide-react";
 import { getContrastColor } from "../lib/colorUtils";
+
+function isAppleWalletDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  // iPadOS 13+ reports as MacIntel with touch
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
 
 type Restaurant = {
   id: string;
@@ -27,9 +36,7 @@ export default function PublicEnrollment() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [passPending, setPassPending] = useState(false);
-  const [passError, setPassError] = useState<string | null>(null);
-  const [passDownloaded, setPassDownloaded] = useState(false);
+  const isApple = useMemo(isAppleWalletDevice, []);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -96,37 +103,7 @@ export default function PublicEnrollment() {
     }
   }
 
-  async function handleAddToWallet() {
-    if (!customerId) return;
-    setPassPending(true);
-    setPassError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/wallet/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: customerId })
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "carte-fidelite.pkpass";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setPassDownloaded(true);
-    } catch (err) {
-      setPassError(err instanceof Error ? err.message : "Échec génération pass");
-    } finally {
-      setPassPending(false);
-    }
-  }
-
+  const walletUrl = customerId ? `${API_BASE}/api/wallet/apple/${customerId}` : null;
   const restoName = resto?.name?.trim() || "Ce restaurant";
 
   return (
@@ -211,8 +188,8 @@ export default function PublicEnrollment() {
           </>
         ) : (
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--tenant-text)] opacity-60">
-              Bienvenue
+            <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--tenant-text)] opacity-60">
+              Bienvenue chez {restoName}
             </div>
             <h1 className="mt-3 text-3xl font-light tracking-tight text-[var(--tenant-text)]">
               Tu fais partie de la famille.
@@ -221,20 +198,31 @@ export default function PublicEnrollment() {
               Garde ta carte dans ton portefeuille — elle suit tes points en temps réel.
             </p>
 
-            <button
-              onClick={handleAddToWallet}
-              disabled={passPending}
-              className="mt-10 w-full py-5 text-base font-medium tracking-wide bg-[var(--tenant-text)] text-[var(--tenant-brand)] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {passPending ? "Génération de la carte…" : "Ajouter à Apple Wallet"}
-            </button>
-
-            {passDownloaded && !passError && (
-              <p className="mt-5 text-sm text-[var(--tenant-text)] opacity-70">
-                Carte téléchargée. Ouvre le fichier pour l'ajouter à Wallet.
-              </p>
+            {walletUrl && isApple && (
+              <a
+                href={walletUrl}
+                className="mt-10 inline-flex w-full items-center justify-center gap-2 h-14 rounded-xl bg-[var(--tenant-text)] text-[var(--tenant-brand)] text-base font-medium tracking-wide transition-opacity hover:opacity-90"
+              >
+                <Wallet size={20} strokeWidth={1.75} aria-hidden />
+                <span>Ajouter à Apple Wallet</span>
+              </a>
             )}
-            {passError && <p className="mt-5 text-sm text-danger">{passError}</p>}
+
+            {walletUrl && !isApple && (
+              <a
+                href={walletUrl}
+                className="mt-10 inline-flex w-full items-center justify-center gap-2 h-14 rounded-xl border border-[var(--tenant-text)]/40 text-[var(--tenant-text)] text-base font-medium tracking-wide transition-colors hover:bg-[var(--tenant-text)]/10"
+              >
+                <Wallet size={20} strokeWidth={1.75} aria-hidden />
+                <span>Télécharger la carte</span>
+              </a>
+            )}
+
+            <p className="mt-5 text-xs text-[var(--tenant-text)] opacity-60">
+              {isApple
+                ? "Wallet s'ouvrira automatiquement."
+                : "Pour ajouter à Apple Wallet, ouvre ce lien sur ton iPhone."}
+            </p>
           </div>
         )}
       </div>

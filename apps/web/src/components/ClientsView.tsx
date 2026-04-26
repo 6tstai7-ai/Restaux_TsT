@@ -119,48 +119,62 @@ export default function ClientsView() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans antialiased">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 md:px-8 md:py-16">
-        <header className="mb-10 flex flex-col gap-6 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-light tracking-tight">Clients</h1>
-            <p className="mt-2 text-sm text-zinc-500">Base fidélité — La Boîte Jaune</p>
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 md:px-8 md:py-10">
+        <header className="mb-10 flex flex-col gap-4 border-b border-[var(--color-border)] pb-6 md:flex-row md:items-center md:justify-between md:pb-8">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="font-display text-h1 font-bold tracking-tight">RESTAUX</h1>
+            <DashboardNav />
           </div>
-          <DashboardNav />
+          <p className="text-caption text-[var(--color-text-muted)]">
+            Clients — Base fidélité
+          </p>
         </header>
 
-        <section className="mb-20">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto]">
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Nom complet"
-              required
-              className="bg-transparent border border-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-colors"
-            />
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Téléphone"
-              required
-              className="bg-transparent border border-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={submitting || !restaurantId}
-              className="border border-zinc-100 bg-zinc-100 px-6 py-3 text-sm font-medium text-black hover:bg-transparent hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {submitting ? "Ajout…" : "Ajouter"}
-            </button>
+        <section className="mb-10">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:gap-4">
+            <div>
+              <label htmlFor="cli-name" className="block mb-2 text-caption text-[var(--color-text-muted)]">
+                Nom complet
+              </label>
+              <input
+                id="cli-name"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-body text-[var(--color-text)] focus:border-[var(--tenant-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-accent)]/30 transition-colors duration-180 ease-out-punched"
+              />
+            </div>
+            <div>
+              <label htmlFor="cli-phone" className="block mb-2 text-caption text-[var(--color-text-muted)]">
+                Téléphone
+              </label>
+              <input
+                id="cli-phone"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+                className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg px-4 py-3 font-mono tabular text-body text-[var(--color-text)] focus:border-[var(--tenant-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-accent)]/30 transition-colors duration-180 ease-out-punched"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={submitting || !restaurantId}
+                className="w-full sm:w-auto inline-flex items-center justify-center min-h-[48px] rounded-lg bg-[var(--tenant-accent)] px-6 py-3 text-sm font-semibold text-[var(--tenant-accent-ink)] hover:bg-[var(--tenant-accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-180 ease-out-punched"
+              >
+                {submitting ? "Ajout…" : "Ajouter"}
+              </button>
+            </div>
           </form>
-          {error && <p className="mt-4 text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-4 text-caption text-[var(--color-danger)]">{error}</p>}
         </section>
 
         <section>
-          <div className="border-t border-zinc-800">
-            <div className="hidden md:grid md:grid-cols-[1fr_1fr_80px_160px] gap-6 py-4 text-xs uppercase tracking-widest text-zinc-500">
+          <div className="border-t border-[var(--color-border)]">
+            <div className="hidden md:grid md:grid-cols-[1.4fr_1fr_100px_180px] gap-6 py-3 text-micro uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
               <div>Nom</div>
               <div>Téléphone</div>
               <div className="text-right">Points</div>
@@ -168,32 +182,41 @@ export default function ClientsView() {
             </div>
 
             {loading && (
-              <div className="border-t border-zinc-900 py-8 text-sm text-zinc-600">Chargement…</div>
+              <div className="border-t border-[var(--color-border)] py-8 text-caption text-[var(--color-text-dim)]">
+                Chargement…
+              </div>
             )}
 
             {!loading && customers.length === 0 && (
-              <div className="border-t border-zinc-900 py-8 text-sm text-zinc-600">Aucun client pour l'instant.</div>
+              <div className="border-t border-[var(--color-border)] py-8 text-caption text-[var(--color-text-dim)]">
+                Aucun client pour l'instant.
+              </div>
             )}
 
             {!loading &&
               customers.map((c) => (
                 <div
                   key={c.id}
-                  className="flex flex-col gap-3 border-t border-zinc-900 py-4 text-sm md:grid md:grid-cols-[1fr_1fr_80px_160px] md:items-center md:gap-6"
+                  className="flex flex-col gap-3 border-t border-[var(--color-border)] py-4 text-body md:grid md:grid-cols-[1.4fr_1fr_100px_180px] md:items-center md:gap-6"
                 >
                   <div className="flex items-center justify-between gap-3 md:block">
-                    <span className="text-zinc-100">{c.name ?? "—"}</span>
-                    <span className="text-xs text-orange-400 font-bold tabular-nums md:hidden">
-                      {c.points_balance ?? 0} pts
+                    <span className="text-[var(--color-text)] font-medium">{c.name ?? "—"}</span>
+                    <span className="font-mono tabular text-caption text-[var(--color-text-muted)] md:hidden">
+                      {(c.points_balance ?? 0).toLocaleString('fr-CA')} pts
                     </span>
                   </div>
-                  <div className="text-zinc-400">{c.phone ?? "—"}</div>
-                  <div className="hidden md:block text-right text-zinc-400 tabular-nums">{c.points_balance ?? 0}</div>
+                  <div className="font-mono tabular text-[var(--color-text-muted)]">
+                    {c.phone ?? "—"}
+                  </div>
+                  <div className="hidden md:block text-right font-mono tabular text-[var(--color-text)]">
+                    {(c.points_balance ?? 0).toLocaleString('fr-CA')}
+                  </div>
                   <div className="md:text-right">
                     <button
+                      type="button"
                       onClick={() => handleGeneratePass(c.id)}
                       disabled={pendingId === c.id}
-                      className="w-full md:w-auto border border-zinc-800 px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="w-full md:w-auto inline-flex items-center justify-center min-h-[44px] rounded-lg border border-[var(--color-border-strong)] bg-transparent px-4 py-2 text-caption text-[var(--color-text)] hover:bg-[var(--color-surface-2)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-180 ease-out-punched"
                     >
                       {pendingId === c.id ? "Génération…" : "Générer pass"}
                     </button>

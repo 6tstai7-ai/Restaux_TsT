@@ -34,14 +34,14 @@ function formatRelative(iso: string): string {
 
 function KpiSkeleton() {
   return (
-    <Card className="bg-zinc-900 border-zinc-800 text-white">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="h-5 w-40 bg-zinc-800 rounded animate-pulse" />
-        <div className="h-6 w-6 bg-zinc-800 rounded animate-pulse" />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div className="h-4 w-32 bg-[var(--color-surface-2)] rounded" />
+        <div className="h-5 w-5 bg-[var(--color-surface-2)] rounded" />
       </CardHeader>
       <CardContent>
-        <div className="h-12 w-32 bg-zinc-800 rounded animate-pulse" />
-        <div className="h-4 w-44 bg-zinc-800 rounded animate-pulse mt-3" />
+        <div className="h-12 w-28 bg-[var(--color-surface-2)] rounded" />
+        <div className="h-3 w-40 bg-[var(--color-surface-2)] rounded mt-3" />
       </CardContent>
     </Card>
   );
@@ -51,13 +51,13 @@ function RecentRowSkeleton() {
   return (
     <div className="flex items-center justify-between p-4">
       <div className="flex items-center gap-4">
-        <div className="h-10 w-10 bg-zinc-800 rounded-full animate-pulse" />
+        <div className="h-10 w-10 bg-[var(--color-surface-2)] rounded-full" />
         <div className="space-y-2">
-          <div className="h-4 w-32 bg-zinc-800 rounded animate-pulse" />
-          <div className="h-3 w-44 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-4 w-32 bg-[var(--color-surface-2)] rounded" />
+          <div className="h-3 w-44 bg-[var(--color-surface-2)] rounded" />
         </div>
       </div>
-      <div className="h-4 w-16 bg-zinc-800 rounded animate-pulse" />
+      <div className="h-4 w-16 bg-[var(--color-surface-2)] rounded" />
     </div>
   );
 }
@@ -255,28 +255,28 @@ const DemoDashboard = () => {
   const buttonDisabled = auditStatus === 'saving' || auditStatus === 'generating' || auditStatus === 'saved';
   const buttonText =
     auditStatus === 'saving'     ? "Enregistrement…" :
-    auditStatus === 'generating' ? "Audit enregistré — Génération IA en cours…" :
-    auditStatus === 'saved'      ? "Campagne IA générée — aperçu ci-dessous" :
-                                   "GÉNÉRER LA CAMPAGNE IA";
+    auditStatus === 'generating' ? "Génération IA en cours…" :
+    auditStatus === 'saved'      ? "Campagne générée — aperçu ci-dessous" :
+                                   "Générer la campagne";
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-7xl space-y-8 md:space-y-10">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 md:px-8 md:py-10 space-y-10 md:space-y-14">
 
         {/* Header */}
-        <div className="flex flex-col gap-4 border-b border-zinc-800 pb-6 md:flex-row md:items-center md:justify-between md:pb-8">
+        <header className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-6 md:flex-row md:items-center md:justify-between md:pb-8">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-2xl font-extrabold tracking-tighter italic md:text-3xl">RESTAUX.</h1>
+            <h1 className="font-display text-h1 font-bold tracking-tight">RESTAUX</h1>
             <DashboardNav />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end md:gap-8">
-            <p className="text-zinc-500 text-base md:text-lg">Dashboard Pilote — La Boîte Jaune</p>
-            <Badge variant="outline" className="text-yellow-500 border-yellow-500 text-xs px-3 py-1 md:text-base md:px-4 md:py-1.5">Mode Démo Actif</Badge>
+          <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end md:gap-6">
+            <p className="text-caption text-[var(--color-text-muted)]">Pilote — La Boîte Jaune</p>
+            <Badge variant="warning">Mode Démo Actif</Badge>
           </div>
-        </div>
+        </header>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
+        {/* KPIs — grid breakpoints per §4 */}
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
           {metricsLoading ? (
             <>
               <KpiSkeleton />
@@ -284,127 +284,152 @@ const DemoDashboard = () => {
             </>
           ) : (
             <>
-              <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader className="flex flex-row items-center justify-between pb-3 md:pb-4">
-                  <CardTitle className="text-base md:text-lg font-medium text-zinc-400">Clients fidélisés</CardTitle>
-                  <Users className="h-5 w-5 md:h-6 md:w-6 text-blue-400" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-micro uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                    Clients fidélisés
+                  </CardTitle>
+                  <Users size={20} strokeWidth={1.75} className="text-[var(--color-text-muted)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl md:text-5xl font-extrabold tabular-nums">
+                  <div className="font-display font-bold tracking-tight tabular text-[clamp(2rem,6vw,2.75rem)] leading-[1.05]">
                     {(kpis?.totalCustomers ?? 0).toLocaleString('fr-CA')}
                   </div>
-                  <p className="text-sm text-zinc-500 mt-1">Base opt-in active</p>
+                  <p className="mt-2 text-caption text-[var(--color-text-dim)]">Base opt-in active</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-zinc-900 border-zinc-800 text-white">
-                <CardHeader className="flex flex-row items-center justify-between pb-3 md:pb-4">
-                  <CardTitle className="text-base md:text-lg font-medium text-zinc-400">Points distribués</CardTitle>
-                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-emerald-400" />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-micro uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                    Points distribués
+                  </CardTitle>
+                  <TrendingUp size={20} strokeWidth={1.75} className="text-[var(--color-text-muted)]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl md:text-5xl font-extrabold tabular-nums">
+                  <div className="font-display font-bold tracking-tight tabular text-[clamp(2rem,6vw,2.75rem)] leading-[1.05]">
                     {(kpis?.totalPoints ?? 0).toLocaleString('fr-CA')}
                   </div>
-                  <p className="text-sm text-zinc-500 mt-1">Solde total fidélité</p>
+                  <p className="mt-2 text-caption text-[var(--color-text-dim)]">Solde total fidélité</p>
                 </CardContent>
               </Card>
             </>
           )}
-        </div>
+        </section>
 
         {metricsError && (
-          <div className="border border-red-500/60 bg-red-500/10 text-red-400 text-sm p-3 rounded-md">
+          <div className="border border-[var(--color-danger)] bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-sm p-3 rounded-lg">
             Métriques indisponibles : {metricsError}
           </div>
         )}
 
-        {/* Audit des Surplus */}
-        <div className="mt-8 md:mt-16">
-          <Card className="bg-zinc-900 border-2 border-yellow-500/50 text-white">
-            <CardHeader>
-              <CardTitle className="text-xl md:text-2xl flex items-center gap-3">
-                <span className="h-3 w-3 bg-yellow-500 rounded-full animate-pulse shrink-0" />
-                Audit des Surplus Hebdomadaire
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 md:space-y-6">
-              <p className="text-zinc-400 text-base md:text-lg italic">"{AUDIT_QUESTION}"</p>
-              <textarea
-                className="w-full bg-black border border-zinc-700 rounded-lg p-4 md:p-6 text-base md:text-xl text-zinc-300 focus:border-yellow-500 outline-none h-40 disabled:opacity-60"
-                placeholder="Ex: 15kg d'ailes de poulet, porc pour griot..."
-                value={surplusText}
-                onChange={(e) => setSurplusText(e.target.value)}
-                disabled={buttonDisabled}
-              />
-              {auditError && (
-                <div className="border border-red-500/60 bg-red-500/10 text-red-400 text-sm p-3 rounded-md">
-                  {auditError}
+        {/* Audit des Surplus — distinctive move: thick tenant-accent left bar */}
+        <section>
+          <Card className="relative overflow-hidden">
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--tenant-accent)]"
+            />
+            <div className="pl-1">
+              <CardHeader>
+                <CardTitle className="text-h2 font-display flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-[var(--tenant-accent)] shrink-0" />
+                  Audit des surplus
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <p className="text-body text-[var(--color-text-muted)]">{AUDIT_QUESTION}</p>
+                <div>
+                  <label
+                    htmlFor="surplus"
+                    className="block mb-2 text-caption text-[var(--color-text-muted)]"
+                  >
+                    Réponse libre
+                  </label>
+                  <textarea
+                    id="surplus"
+                    className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-lg p-4 text-body text-[var(--color-text)] focus:border-[var(--tenant-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-accent)]/30 h-32 disabled:opacity-60 transition-colors duration-180 ease-out-punched"
+                    placeholder="Ex: 15 kg d'ailes de poulet, porc pour griot…"
+                    value={surplusText}
+                    onChange={(e) => setSurplusText(e.target.value)}
+                    disabled={buttonDisabled}
+                  />
                 </div>
-              )}
-              <Button
-                onClick={handleGenerate}
-                disabled={buttonDisabled || surplusText.trim().length === 0}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 md:py-8 text-base md:text-2xl tracking-tight disabled:opacity-60 disabled:cursor-not-allowed whitespace-normal"
-              >
-                <Send className="mr-3 h-5 w-5 md:h-6 md:w-6 shrink-0" /> <span className="text-center">{buttonText}</span>
-              </Button>
-            </CardContent>
+                {auditError && (
+                  <div className="border border-[var(--color-danger)] bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-sm p-3 rounded-lg">
+                    {auditError}
+                  </div>
+                )}
+                <Button
+                  variant="primary"
+                  onClick={handleGenerate}
+                  disabled={buttonDisabled || surplusText.trim().length === 0}
+                  className="w-full"
+                >
+                  <Send size={20} strokeWidth={1.75} className="mr-2 shrink-0" />
+                  <span>{buttonText}</span>
+                </Button>
+              </CardContent>
+            </div>
           </Card>
-        </div>
+        </section>
 
         {/* Section Bas : SMS et Clients */}
-        <div className="mt-8 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
 
           {/* Aperçu SMS */}
-          <div className={`p-5 md:p-8 border rounded-xl bg-zinc-900/50 ${generatedSms ? 'border-yellow-500/60' : 'border-zinc-800 opacity-80'}`}>
-            <h3 className="text-sm font-bold text-zinc-500 uppercase mb-4 tracking-widest flex items-center gap-2">
-              Aperçu Promo SMS
-              {generatedSms && sendStatus !== 'sent' && (
-                <Badge variant="outline" className="text-yellow-500 border-yellow-500">Généré IA</Badge>
-              )}
-              {sendStatus === 'sent' && (
-                <Badge variant="outline" className="text-emerald-400 border-emerald-400">Envoyée</Badge>
-              )}
-            </h3>
-            <p className="text-lg italic font-mono text-zinc-300">
-              "{generatedSms ?? "Spécial ce soir à La Boîte Jaune ! Obtenez un extra Mac n Cheese gratuit à l'achat de nos fameuses ailes de poulet (12 mcx). Présentez votre carte Wallet. Valide aujourd'hui seulement !"}"
-            </p>
-
-            {sendStatus === 'sent' && sendCount !== null && (
-              <div className="mt-6 border border-emerald-500/60 bg-emerald-500/10 text-emerald-300 text-base font-bold p-4 rounded-md">
-                Promotion envoyée à {sendCount} client{sendCount > 1 ? 's' : ''} !
-              </div>
-            )}
-
-            {sendError && (
-              <div className="mt-6 border border-red-500/60 bg-red-500/10 text-red-400 text-sm p-3 rounded-md">
-                {sendError}
-              </div>
-            )}
-
-            {generatedSms && promotionId && sendStatus !== 'sent' && (
-              <Button
-                onClick={handleSend}
-                disabled={sendStatus === 'sending'}
-                className="mt-6 w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-6 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Send className="mr-2 h-5 w-5" />
-                {sendStatus === 'sending' ? 'Envoi en cours…' : 'Envoyer la promotion'}
-              </Button>
-            )}
-          </div>
-
-          {/* Derniers clients inscrits */}
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
-            <CardHeader className="pb-4 border-b border-zinc-800">
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-zinc-400"/> Derniers clients inscrits</span>
-                <Badge variant="outline" className="text-emerald-400 border-emerald-400">En direct</Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-micro uppercase tracking-[0.08em] text-[var(--color-text-muted)] flex items-center gap-2">
+                <span>Aperçu Promo SMS</span>
+                {generatedSms && sendStatus !== 'sent' && <Badge variant="tenant">Généré IA</Badge>}
+                {sendStatus === 'sent' && <Badge variant="success">Envoyée</Badge>}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 p-0">
-              <div className="divide-y divide-zinc-800">
+            <CardContent className="space-y-5">
+              <p className="font-mono text-body text-[var(--color-text)] leading-relaxed">
+                {generatedSms ?? "Spécial ce soir à La Boîte Jaune ! Obtenez un extra Mac n Cheese gratuit à l'achat de nos fameuses ailes de poulet (12 mcx). Présentez votre carte Wallet. Valide aujourd'hui seulement !"}
+              </p>
+
+              {sendStatus === 'sent' && sendCount !== null && (
+                <div className="border border-[var(--color-success)] bg-[var(--color-success)]/10 text-[var(--color-success)] text-sm p-3 rounded-lg">
+                  Promotion envoyée à {sendCount} client{sendCount > 1 ? 's' : ''}.
+                </div>
+              )}
+
+              {sendError && (
+                <div className="border border-[var(--color-danger)] bg-[var(--color-danger)]/10 text-[var(--color-danger)] text-sm p-3 rounded-lg">
+                  {sendError}
+                </div>
+              )}
+
+              {generatedSms && promotionId && sendStatus !== 'sent' && (
+                <Button
+                  variant="primary"
+                  onClick={handleSend}
+                  disabled={sendStatus === 'sending'}
+                  className="w-full"
+                >
+                  <Send size={20} strokeWidth={1.75} className="mr-2 shrink-0" />
+                  {sendStatus === 'sending' ? 'Envoi en cours…' : 'Envoyer la promotion'}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Derniers clients inscrits */}
+          <Card>
+            <CardHeader className="border-b border-[var(--color-border)]">
+              <CardTitle className="text-micro uppercase tracking-[0.08em] text-[var(--color-text-muted)] flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Smartphone size={20} strokeWidth={1.75} />
+                  Derniers clients inscrits
+                </span>
+                <Badge variant="success">En direct</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-[var(--color-border)]">
                 {metricsLoading ? (
                   <>
                     <RecentRowSkeleton />
@@ -414,23 +439,30 @@ const DemoDashboard = () => {
                   </>
                 ) : recentCustomers && recentCustomers.length > 0 ? (
                   recentCustomers.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors">
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-4 hover:bg-[var(--color-surface-2)] transition-colors duration-180 ease-out-punched"
+                    >
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 bg-zinc-800 rounded-full flex items-center justify-center font-bold text-zinc-400 border border-zinc-700">
+                        <div className="h-10 w-10 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border)] flex items-center justify-center font-display font-semibold text-[var(--color-text-muted)]">
                           {(c.name?.charAt(0) ?? '?').toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-base">{c.name ?? 'Sans nom'}</p>
-                          <p className="text-xs text-zinc-500">{c.phone ?? '—'} • {formatRelative(c.created_at)}</p>
+                          <p className="text-body font-medium text-[var(--color-text)]">{c.name ?? 'Sans nom'}</p>
+                          <p className="text-caption text-[var(--color-text-dim)]">
+                            <span className="font-mono tabular">{c.phone ?? '—'}</span>
+                            <span className="mx-1.5">·</span>
+                            {formatRelative(c.created_at)}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-xs text-orange-400 font-bold">
+                      <p className="text-caption font-semibold text-[var(--color-text)] tabular">
                         {(c.points_balance ?? 0).toLocaleString('fr-CA')} pts
                       </p>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-zinc-500 text-sm">
+                  <div className="p-8 text-center text-caption text-[var(--color-text-dim)]">
                     Aucun client inscrit pour l'instant.
                   </div>
                 )}
@@ -438,7 +470,7 @@ const DemoDashboard = () => {
             </CardContent>
           </Card>
 
-        </div>
+        </section>
       </div>
     </div>
   );

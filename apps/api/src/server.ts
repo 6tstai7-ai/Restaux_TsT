@@ -4,7 +4,7 @@ import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import twilio, { type Twilio } from "twilio";
-import { createWalletController } from "./wallet.js";
+import { createWalletController, createApplePassController } from "./wallet.js";
 import { createPublicEnrollController, createPublicRestaurantController } from "./public.js";
 
 let twilioClient: Twilio | null = null;
@@ -74,6 +74,7 @@ export function createServer(): Express {
   });
 
   app.post("/api/wallet/generate", createWalletController(supabase));
+  app.get("/api/wallet/apple/:clientId", createApplePassController(supabase));
   app.get("/api/public/restaurant/:id", createPublicRestaurantController(supabase));
   app.post("/api/public/enroll", createPublicEnrollController(supabase));
 
@@ -188,7 +189,7 @@ export function createServer(): Express {
 
     const { data: customers, error: custErr } = await supabase
       .from("customers")
-      .select("id, phone")
+      .select("id, phone, opt_in_sms")
       .eq("restaurant_id", promo.restaurant_id)
       .eq("opt_in_sms", true)
       .not("phone", "is", null);
@@ -196,7 +197,13 @@ export function createServer(): Express {
       return res.status(500).json({ success: false, error: custErr.message });
     }
 
-    const recipients = (customers ?? []).filter((c) => !!c.phone);
+    const recipients = (customers ?? []).filter(
+      (c): c is { id: string; phone: string; opt_in_sms: boolean } =>
+        c.opt_in_sms === true && typeof c.phone === "string" && c.phone.trim().length > 0
+    );
+
+    console.log(`[broadcast] promotion=${id} attempting to send to ${recipients.length} clients`);
+
     if (recipients.length === 0) {
       return res
         .status(400)
@@ -213,11 +220,11 @@ export function createServer(): Express {
 
     const body = `${promo.content_sms}\n\nRépondez STOP pour vous désabonner.`;
 
-    const results = await Promise.allSettled(
-      recipients.map((c) =>
-        client.messages.create({ to: c.phone as string, from: fromNumber, body })
-      )
+    const sendTasks = recipients.map((c) =>
+      client.messages.create({ to: c.phone, from: fromNumber, body })
     );
+    const results = await Promise.allSettled(sendTasks);
+
     let sent = 0;
     let failed = 0;
     results.forEach((r, i) => {
@@ -229,6 +236,10 @@ export function createServer(): Express {
         console.warn(`[twilio] échec envoi customer=${recipients[i]?.id}: ${msg}`);
       }
     });
+
+    console.log(
+      `[broadcast] promotion=${id} done — sent=${sent} failed=${failed} total=${recipients.length}`
+    );
 
     const { error: updErr } = await supabase
       .from("promotions")
