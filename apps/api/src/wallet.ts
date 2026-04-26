@@ -18,6 +18,17 @@ function hexToRgb(hex: string | null | undefined): string | null {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
+function getContrastColor(hex: string): string {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return "#000000";
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#000000" : "#FFFFFF";
+}
+
 export function createWalletController(supabase: SupabaseClient) {
   return async (req: Request, res: Response) => {
     const { client_id } = req.body ?? {};
@@ -43,9 +54,11 @@ export function createWalletController(supabase: SupabaseClient) {
       return res.status(404).json({ success: false, error: restoErr?.message ?? "restaurant introuvable" });
     }
 
-    const bgColor = hexToRgb(restaurant.card_bg_color) ?? "rgb(24, 24, 27)";
-    const textColor = hexToRgb(restaurant.card_text_color) ?? "rgb(255, 255, 255)";
-    const labelColor = hexToRgb(restaurant.card_label_color) ?? "rgb(161, 161, 170)";
+    const brandHex = restaurant.card_bg_color?.trim() || "#18181b";
+    const contrastHex = getContrastColor(brandHex);
+    const bgColor = hexToRgb(brandHex) ?? "rgb(24, 24, 27)";
+    const textColor = hexToRgb(restaurant.card_text_color) ?? hexToRgb(contrastHex)!;
+    const labelColor = hexToRgb(restaurant.card_label_color) ?? hexToRgb(contrastHex)!;
     const orgName = (restaurant.name as string | null)?.trim() || ORG_NAME;
     const passDescription = (restaurant.card_description as string | null)?.trim() || `Carte fidélité ${orgName}`;
 

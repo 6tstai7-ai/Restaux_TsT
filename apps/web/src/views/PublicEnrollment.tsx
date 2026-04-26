@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
+import { getContrastColor } from "../lib/colorUtils";
 
 type Restaurant = {
   id: string;
@@ -11,9 +12,7 @@ type Restaurant = {
 };
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
-const DEFAULT_BG = "#18181b";
-const DEFAULT_TEXT = "#ffffff";
-const DEFAULT_LABEL = "#a1a1aa";
+const DEFAULT_BRAND = "#18181b";
 
 export default function PublicEnrollment() {
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -56,14 +55,14 @@ export default function PublicEnrollment() {
     })();
   }, [restaurantId]);
 
-  const colors = useMemo(
-    () => ({
-      bg: resto?.card_bg_color ?? DEFAULT_BG,
-      text: resto?.card_text_color ?? DEFAULT_TEXT,
-      label: resto?.card_label_color ?? DEFAULT_LABEL
-    }),
-    [resto]
-  );
+  const tenantStyle = useMemo<CSSProperties>(() => {
+    const brand = resto?.card_bg_color?.trim() || DEFAULT_BRAND;
+    const text = resto?.card_text_color?.trim() || getContrastColor(brand);
+    return {
+      "--tenant-brand": brand,
+      "--tenant-text": text
+    } as CSSProperties;
+  }, [resto]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -132,8 +131,8 @@ export default function PublicEnrollment() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-6 py-12 font-sans antialiased transition-colors"
-      style={{ backgroundColor: colors.bg, color: colors.text }}
+      className="min-h-screen flex items-center justify-center px-6 py-12 font-sans antialiased transition-colors bg-[var(--tenant-brand)] text-[var(--tenant-text)]"
+      style={tenantStyle}
     >
       <div className="w-full max-w-md">
         {loading ? (
@@ -146,21 +145,18 @@ export default function PublicEnrollment() {
         ) : !customerId ? (
           <>
             <header className="mb-10 text-center">
-              <div
-                className="text-[10px] uppercase tracking-[0.3em]"
-                style={{ color: colors.label }}
-              >
+              <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--tenant-text)] opacity-60">
                 Programme fidélité
               </div>
-              <h1 className="mt-3 text-3xl font-light tracking-tight">{restoName}</h1>
-              <p className="mt-4 text-sm opacity-70">
+              <h1 className="mt-3 text-3xl font-light tracking-tight text-[var(--tenant-text)]">{restoName}</h1>
+              <p className="mt-4 text-sm text-[var(--tenant-text)] opacity-70">
                 Rejoins la base fidèle. Accumule des points à chaque visite. Reçois les meilleures offres en premier.
               </p>
             </header>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-2" style={{ color: colors.label }}>
+                <label className="block text-xs uppercase tracking-widest mb-2 text-[var(--tenant-text)] opacity-60">
                   Prénom et Nom
                 </label>
                 <input
@@ -169,13 +165,12 @@ export default function PublicEnrollment() {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   autoComplete="name"
-                  className="w-full bg-transparent border border-current/30 px-4 py-3 text-base focus:outline-none transition-colors"
-                  style={{ borderColor: `${colors.label}66`, color: colors.text }}
+                  className="w-full bg-transparent border border-[var(--tenant-text)]/30 px-4 py-3 text-base text-[var(--tenant-text)] focus:outline-none focus:border-[var(--tenant-text)]/70 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-2" style={{ color: colors.label }}>
+                <label className="block text-xs uppercase tracking-widest mb-2 text-[var(--tenant-text)] opacity-60">
                   Numéro de téléphone
                 </label>
                 <input
@@ -186,8 +181,7 @@ export default function PublicEnrollment() {
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="(514) 555-1234"
-                  className="w-full bg-transparent border px-4 py-3 text-base focus:outline-none transition-colors placeholder-current/40"
-                  style={{ borderColor: `${colors.label}66`, color: colors.text }}
+                  className="w-full bg-transparent border border-[var(--tenant-text)]/30 px-4 py-3 text-base text-[var(--tenant-text)] placeholder:text-[var(--tenant-text)]/40 focus:outline-none focus:border-[var(--tenant-text)]/70 transition-colors"
                 />
               </div>
 
@@ -199,20 +193,17 @@ export default function PublicEnrollment() {
                   required
                   className="mt-1 h-4 w-4 accent-current shrink-0"
                 />
-                <span className="text-sm leading-relaxed opacity-90">
+                <span className="text-sm leading-relaxed text-[var(--tenant-text)] opacity-90">
                   J'accepte de recevoir des offres par SMS. Je peux me désinscrire à tout moment en répondant STOP.
                 </span>
               </label>
 
-              {submitError && (
-                <p className="text-sm" style={{ color: "var(--color-danger)" }}>{submitError}</p>
-              )}
+              {submitError && <p className="text-sm text-danger">{submitError}</p>}
 
               <button
                 type="submit"
                 disabled={submitting || !consent || !fullName.trim() || !phone.trim()}
-                className="w-full py-4 text-sm font-medium tracking-wide transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ backgroundColor: colors.text, color: colors.bg }}
+                className="w-full py-4 text-sm font-medium tracking-wide bg-[var(--tenant-text)] text-[var(--tenant-brand)] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {submitting ? "Inscription…" : "Rejoindre"}
               </button>
@@ -220,36 +211,30 @@ export default function PublicEnrollment() {
           </>
         ) : (
           <div className="text-center">
-            <div
-              className="text-[10px] uppercase tracking-[0.3em]"
-              style={{ color: colors.label }}
-            >
+            <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--tenant-text)] opacity-60">
               Bienvenue
             </div>
-            <h1 className="mt-3 text-3xl font-light tracking-tight">
+            <h1 className="mt-3 text-3xl font-light tracking-tight text-[var(--tenant-text)]">
               Tu fais partie de la famille.
             </h1>
-            <p className="mt-4 text-sm opacity-70">
+            <p className="mt-4 text-sm text-[var(--tenant-text)] opacity-70">
               Garde ta carte dans ton portefeuille — elle suit tes points en temps réel.
             </p>
 
             <button
               onClick={handleAddToWallet}
               disabled={passPending}
-              className="mt-10 w-full py-5 text-base font-medium tracking-wide transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: colors.text, color: colors.bg }}
+              className="mt-10 w-full py-5 text-base font-medium tracking-wide bg-[var(--tenant-text)] text-[var(--tenant-brand)] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {passPending ? "Génération de la carte…" : "Ajouter à Apple Wallet"}
             </button>
 
             {passDownloaded && !passError && (
-              <p className="mt-5 text-sm opacity-70">
+              <p className="mt-5 text-sm text-[var(--tenant-text)] opacity-70">
                 Carte téléchargée. Ouvre le fichier pour l'ajouter à Wallet.
               </p>
             )}
-            {passError && (
-              <p className="mt-5 text-sm" style={{ color: "var(--color-danger)" }}>{passError}</p>
-            )}
+            {passError && <p className="mt-5 text-sm text-danger">{passError}</p>}
           </div>
         )}
       </div>
