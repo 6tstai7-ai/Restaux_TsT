@@ -1,10 +1,12 @@
 import type { Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { requireUserId } from "./auth.js";
 import { generateApplePass } from "./services/passkit.js";
 
 const DEFAULT_BG = "#18181b";
 
 type TenantRow = {
+  owner_id: string | null;
   name: string | null;
   card_bg_color: string | null;
   card_text_color: string | null;
@@ -22,7 +24,8 @@ type CustomerRow = {
 async function buildAndSendPass(
   supabase: SupabaseClient,
   res: Response,
-  clientId: string
+  clientId: string,
+  ownerUserId?: string
 ): Promise<Response> {
   const { data: customer, error: custErr } = await supabase
     .from("customers")
@@ -37,13 +40,16 @@ async function buildAndSendPass(
 
   const { data: restaurant, error: restoErr } = await supabase
     .from("restaurants")
-    .select("name, card_bg_color, card_text_color, card_label_color, card_description")
+    .select("owner_id, name, card_bg_color, card_text_color, card_label_color, card_description")
     .eq("id", customer.restaurant_id)
     .single<TenantRow>();
   if (restoErr || !restaurant) {
     return res
       .status(404)
       .json({ success: false, error: restoErr?.message ?? "restaurant introuvable" });
+  }
+  if (ownerUserId && restaurant.owner_id !== ownerUserId) {
+    return res.status(403).json({ success: false, error: "accès refusé" });
   }
 
   const tenantName = restaurant.name?.trim() || "Restaurant";
@@ -96,7 +102,9 @@ export function createWalletController(supabase: SupabaseClient) {
     if (!id || typeof id !== "string") {
       return res.status(400).json({ success: false, error: "client_id (string) requis" });
     }
-    return buildAndSendPass(supabase, res, id);
+    const userId = await requireUserId(supabase, req, res);
+    if (!userId) return res;
+    return buildAndSendPass(supabase, res, id, userId);
   };
 }
 

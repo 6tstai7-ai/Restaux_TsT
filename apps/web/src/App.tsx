@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
+import StockPage from "./pages/StockPage";
 import DemoDashboard from "./DemoDashboard";
 import ClientsView from "./components/ClientsView";
 import LoyaltySettings from "./components/LoyaltySettings";
@@ -18,6 +19,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <DemoDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stock"
+          element={
+            <ProtectedRoute>
+              <StockPage />
             </ProtectedRoute>
           }
         />

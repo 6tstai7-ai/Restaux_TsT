@@ -4,8 +4,15 @@ import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import twilio, { type Twilio } from "twilio";
+import { requireRestaurantOwner, requireUserId } from "./auth.js";
 import { createWalletController, createApplePassController } from "./wallet.js";
 import { createPublicEnrollController, createPublicRestaurantController } from "./public.js";
+import {
+  createCreateInventoryStockPromoAuditController,
+  createCompleteWeeklyInventoryCheckController,
+  createGetCurrentWeekInventoryCheckController,
+  createSaveWeeklyInventoryDraftController
+} from "./inventory.js";
 
 let twilioClient: Twilio | null = null;
 function getTwilioClient(): Twilio {
@@ -77,8 +84,18 @@ export function createServer(): Express {
   app.get("/api/wallet/apple/:clientId", createApplePassController(supabase));
   app.get("/api/public/restaurant/:id", createPublicRestaurantController(supabase));
   app.post("/api/public/enroll", createPublicEnrollController(supabase));
+  app.get("/api/inventory/checks/current-week", createGetCurrentWeekInventoryCheckController(supabase));
+  app.put("/api/inventory/checks/current-week/draft", createSaveWeeklyInventoryDraftController(supabase));
+  app.post("/api/inventory/checks/:id/complete", createCompleteWeeklyInventoryCheckController(supabase));
+  app.post(
+    "/api/inventory/checks/:id/stock-promo-audit",
+    createCreateInventoryStockPromoAuditController(supabase)
+  );
 
   app.post("/api/generate-promo", async (req: Request, res: Response) => {
+    const userId = await requireUserId(supabase, req, res);
+    if (!userId) return res;
+
     const { audit_id } = req.body ?? {};
     if (!audit_id || typeof audit_id !== "string") {
       return res.status(400).json({ success: false, error: "audit_id (string) requis" });
@@ -98,6 +115,8 @@ export function createServer(): Express {
     if (!audit.response) {
       return res.status(400).json({ success: false, error: "audit sans réponse" });
     }
+    const allowed = await requireRestaurantOwner(supabase, audit.restaurant_id, userId, res);
+    if (!allowed) return res;
 
     let sms = "";
     try {
@@ -157,6 +176,9 @@ export function createServer(): Express {
   });
 
   app.post("/api/promotions/:id/send", async (req: Request, res: Response) => {
+    const userId = await requireUserId(supabase, req, res);
+    if (!userId) return res;
+
     const id = req.params.id;
     if (!id) {
       return res.status(400).json({ success: false, error: "id requis" });
@@ -179,6 +201,8 @@ export function createServer(): Express {
     if (!promo.content_sms) {
       return res.status(400).json({ success: false, error: "promotion sans contenu SMS" });
     }
+    const allowed = await requireRestaurantOwner(supabase, promo.restaurant_id, userId, res);
+    if (!allowed) return res;
 
     const fromNumber = process.env.TWILIO_PHONE_NUMBER ?? process.env.TWILIO_FROM_NUMBER;
     if (!fromNumber) {

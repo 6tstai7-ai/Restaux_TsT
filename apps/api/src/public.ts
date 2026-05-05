@@ -34,7 +34,13 @@ export function createPublicEnrollController(supabase: SupabaseClient) {
     if (!cleanName || !cleanPhone) {
       return res.status(400).json({ success: false, error: "nom et téléphone requis" });
     }
-    const optIn = opt_in_sms === true;
+    if (opt_in_sms !== true) {
+      return res.status(400).json({
+        success: false,
+        error: "consentement SMS explicite requis"
+      });
+    }
+    const optIn = true;
 
     const { data: resto, error: restoErr } = await supabase
       .from("restaurants")
@@ -80,7 +86,18 @@ export function createPublicEnrollController(supabase: SupabaseClient) {
       user_agent: userAgent
     });
     if (consentErr) {
-      console.warn(`[api] consent_log insert échoué (non-fatal): ${consentErr.message}`);
+      console.warn(`[api] consent_log insert échoué: ${consentErr.message}`);
+      const { error: rollbackErr } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", customer.id);
+      if (rollbackErr) {
+        console.warn(`[api] rollback customer échoué: ${rollbackErr.message}`);
+      }
+      return res.status(500).json({
+        success: false,
+        error: "consentement non enregistré, inscription annulée"
+      });
     }
 
     return res.json({ success: true, customer_id: customer.id });

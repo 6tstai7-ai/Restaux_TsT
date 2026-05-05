@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X, LayoutDashboard, Users, CreditCard, ScanLine } from "lucide-react";
+import { Menu, X, LayoutDashboard, Users, CreditCard, ScanLine, Package } from "lucide-react";
 
 const LINKS = [
   { to: "/dashboard", label: "Tableau de bord", Icon: LayoutDashboard },
+  { to: "/stock", label: "Stock", Icon: Package },
   { to: "/customers", label: "Clients", Icon: Users },
   { to: "/loyalty", label: "Identité carte", Icon: CreditCard },
   { to: "/scanner", label: "Scanner", Icon: ScanLine }

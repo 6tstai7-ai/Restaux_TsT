@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/hooks/useSession";
 import DashboardNav from "@/components/DashboardNav";
+import {
+  buildDashboardConsentLogInsert,
+  buildDashboardConsentRollbackUpdate,
+  buildDashboardCustomerInsert
+} from "@/lib/customerConsent";
 
 type Customer = {
   id: string;
@@ -22,6 +27,7 @@ export default function ClientsView() {
 
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -72,20 +78,53 @@ export default function ClientsView() {
     if (!restaurantId) return;
     const name = fullName.trim();
     const phone = phoneNumber.trim();
-    if (!name || !phone) return;
+    if (!name || !phone || !smsConsent) return;
 
     setSubmitting(true);
     setError(null);
-    const { error: err } = await supabase
+    const consentedAt = new Date().toISOString();
+    const { data: customer, error: err } = await supabase
       .from("customers")
-      .insert({ restaurant_id: restaurantId, name, phone });
-    setSubmitting(false);
-    if (err) {
-      setError(err.message);
+      .insert(buildDashboardCustomerInsert({ restaurantId, name, phone, consentedAt }))
+      .select("id")
+      .single();
+    if (err || !customer) {
+      setSubmitting(false);
+      setError(err?.message ?? "Insertion client échouée.");
       return;
     }
+
+    const { error: consentErr } = await supabase
+      .from("consent_log")
+      .insert(buildDashboardConsentLogInsert({ customerId: customer.id as string, consentedAt }));
+    if (consentErr) {
+      const customerId = customer.id as string;
+      const { error: deleteErr } = await supabase.from("customers").delete().eq("id", customerId);
+      if (!deleteErr) {
+        setSubmitting(false);
+        setError("Consentement non journalise; client non ajoute. Reessayez l'ajout.");
+        return;
+      }
+
+      const { error: rollbackErr } = await supabase
+        .from("customers")
+        .update(buildDashboardConsentRollbackUpdate())
+        .eq("id", customerId);
+      if (rollbackErr) {
+        setSubmitting(false);
+        setError(`Consentement non journalise; rollback impossible : ${rollbackErr.message}`);
+        return;
+      }
+
+      await loadCustomers(restaurantId);
+      setSubmitting(false);
+      setError("Consentement non journalise; SMS desactive pour ce client. Reessayez l'ajout.");
+      return;
+    }
+    setSubmitting(false);
     setFullName("");
     setPhoneNumber("");
+    setSmsConsent(false);
     await loadCustomers(restaurantId);
   }
 
@@ -93,9 +132,16 @@ export default function ClientsView() {
     setPendingId(clientId);
     setError(null);
     try {
+      const token = session?.access_token;
+      if (!token) {
+        throw new Error("Session invalide, reconnectez-vous.");
+      }
       const res = await fetch(`${API_BASE}/api/wallet/generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ client_id: clientId })
       });
       if (!res.ok) {
@@ -162,12 +208,24 @@ export default function ClientsView() {
             <div className="flex items-end">
               <button
                 type="submit"
-                disabled={submitting || !restaurantId}
+                disabled={submitting || !restaurantId || !smsConsent}
                 className="w-full sm:w-auto inline-flex items-center justify-center min-h-[48px] rounded-lg bg-[var(--tenant-accent)] px-6 py-3 text-sm font-semibold text-[var(--tenant-accent-ink)] hover:bg-[var(--tenant-accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-180 ease-out-punched"
               >
                 {submitting ? "Ajout…" : "Ajouter"}
               </button>
             </div>
+            <label className="sm:col-span-3 flex items-start gap-3 text-caption text-[var(--color-text-muted)]">
+              <input
+                type="checkbox"
+                checked={smsConsent}
+                onChange={(e) => setSmsConsent(e.target.checked)}
+                required
+                className="mt-1 h-4 w-4 shrink-0 accent-[var(--tenant-accent)]"
+              />
+              <span>
+                Le client a donné son consentement explicite pour recevoir les offres Restaux par SMS.
+              </span>
+            </label>
           </form>
           {error && <p className="mt-4 text-caption text-[var(--color-danger)]">{error}</p>}
         </section>

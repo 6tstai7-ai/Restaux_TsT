@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "test": "pnpm run typecheck && vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

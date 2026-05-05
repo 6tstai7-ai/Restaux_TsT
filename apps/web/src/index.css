@@ -21,14 +21,14 @@
 
   /* Semantic states — fixed, never tenant-overridden */
   --color-success:       #5DAE7A;
-  --color-warning:       #D4A24C;
+  --color-warning:       #60A5FA;
   --color-danger:        #D9534B;
   --color-info:          #6F8AA0;
 
   /* Tenant accent — default fallback, overridden per-tenant via [data-tenant-theme] */
-  --tenant-accent:       #F4C20D;
-  --tenant-accent-hover: #F6CC2E;
-  --tenant-accent-ink:   #0B0B0C;
+  --tenant-accent:       #3B82F6;
+  --tenant-accent-hover: #60A5FA;
+  --tenant-accent-ink:   #F8FAFC;
 
   /* Typography stacks */
   --font-display: "Inter Display", system-ui, sans-serif;
@@ -49,7 +49,7 @@
   --color-brand:         #E8E5DE;
   --color-brand-ink:     #0B0B0C;
   --color-success:       #5DAE7A;
-  --color-warning:       #D4A24C;
+  --color-warning:       #60A5FA;
   --color-danger:        #D9534B;
   --color-info:          #6F8AA0;
 }
